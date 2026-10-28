@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens. Tailwind maps these names in tailwind.config.ts.
+ * Keep this list small: one card style, one radius scale, one shadow.
+ */
+:root {
+  --color-forest: #4f6b1f;
+  --color-leaf: #7ba11e;
+  --color-lime: #b7d335;
+  --color-cream: #f5f8ec;
+  --color-ink: #2a3414;
+  --color-amber: #e0a100;
+  --color-red: #c8402f;
+
+  --color-surface: #ffffff;
+  --color-muted: #66704f;
+  --color-line: #dce4c6;
+  --color-forest-soft: #e8eed9;
+  --color-amber-soft: #fbf1d6;
+  --color-red-soft: #f8e4e0;
+  --color-success-soft: #eaf2d2;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-card: 0 1px 2px rgba(42, 52, 20, 0.08);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-cream font-sans text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+  }
+
+  ::selection {
+    background-color: var(--color-lime);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-lime);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes splash-leaf-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes splash-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-bar-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.splash-leaf {
+  animation: splash-leaf-in 520ms ease-out both;
+}
+
+.splash-word {
+  animation: splash-word-in 620ms ease-out 180ms both;
+}
+
+.splash-bar {
+  animation: splash-bar-fill 1800ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-leaf,
+  .splash-word,
+  .splash-bar {
+    animation: none !important;
+  }
+
+  .splash-bar {
+    width: 100%;
+  }
+}

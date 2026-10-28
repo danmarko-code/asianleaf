@@ -1,0 +1,377 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  HOMEOWNER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+
+// Owner-occupied, owner but living elsewhere, or renting the unit.
+enum OccupancyType {
+  OWNER_OCCUPIED
+  OWNER_NON_OCCUPIED
+  TENANT
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DueStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  WAIVED
+}
+
+enum PaymentMethod {
+  GCASH
+  MAYA
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum BudgetType {
+  INCOME
+  EXPENSE
+}
+
+enum NotificationType {
+  DUE_REMINDER
+  DUE_OVERDUE
+  PAYMENT_RECEIVED
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  FEEDBACK_REPLY
+  GENERAL
+}
+
+enum ReminderKind {
+  ONE_MONTH
+  ONE_WEEK
+  ONE_DAY
+  OVERDUE
+}
+
+enum OtpPurpose {
+  CHANGE_PASSWORD
+}
+
+enum OtpChannel {
+  SMS
+  EMAIL
+}
+
+enum FeedbackStatus {
+  NEW
+  READ
+  RESOLVED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(HOMEOWNER)
+  status       UserStatus @default(ACTIVE)
+
+  // One login per household. Admins have neither field set.
+  householdId String?    @unique
+  household   Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  memberId    String?    @unique
+  member      Member?    @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  sessions         Session[]
+  otpCodes         OtpCode[]
+  notifications    Notification[]
+  feedback         Feedback[]
+  auditLogs        AuditLog[]            @relation("ActorAuditLogs")
+  reviewedRequests RegistrationRequest[] @relation("RequestReviewer")
+  createdRequest   RegistrationRequest?  @relation("RequestCreatedUser")
+  budgetEntries    BudgetEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Opaque session token: the raw token lives only in the browser cookie.
+// We store a SHA-256 hash so a leaked database dump cannot be replayed.
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Household {
+  id          String   @id @default(cuid())
+  unitAddress String   @unique
+  block       String?
+  lot         String?
+  members     Member[]
+  dues        Due[]
+  account     User?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Member {
+  id             String        @id @default(cuid())
+  householdId    String
+  household      Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  contactNumber  String
+  email          String
+  occupancyType  OccupancyType
+  status         MemberStatus  @default(ACTIVE)
+  consentVersion String?
+  consentAt      DateTime?
+  accountUser    User?
+  kasambahay     Kasambahay[]
+  pets           Pet[]
+  vehicles       Vehicle[]
+  occupants      HouseholdMember[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([householdId])
+  @@index([lastName, firstName])
+  @@index([email])
+  @@index([contactNumber])
+}
+
+model Kasambahay {
+  id        String   @id @default(cuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  fullName  String
+  createdAt DateTime @default(now())
+
+  @@index([memberId])
+}
+
+model Pet {
+  id        String   @id @default(cuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  name      String
+  breed     String
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@index([memberId])
+}
+
+model Vehicle {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  plateNumber String
+  count       Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  @@unique([memberId, plateNumber])
+  @@index([memberId])
+}
+
+model HouseholdMember {
+  id           String   @id @default(cuid())
+  memberId     String
+  member       Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  fullName     String
+  relationship String?
+  createdAt    DateTime @default(now())
+
+  @@index([memberId])
+}
+
+// Step-2 answers are stored as validated JSON until an admin approves the
+// request. Approval then creates the household, member, dependents and login
+// in one transaction.
+model RegistrationRequest {
+  id              String        @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String
+  contactNumber   String
+  unitAddress     String
+  payload         Json
+  passwordHash    String?
+  consentVersion  String
+  consentAt       DateTime
+  status          RequestStatus @default(PENDING)
+  rejectionReason String?
+  reviewedById    String?
+  reviewedBy      User?         @relation("RequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  createdUserId   String?       @unique
+  createdUser     User?         @relation("RequestCreatedUser", fields: [createdUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status])
+  @@index([email])
+}
+
+model Due {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  periodStart DateTime  @db.Date
+  amount      Decimal   @db.Decimal(10, 2)
+  dueDate     DateTime  @db.Date
+  status      DueStatus @default(UNPAID)
+  payments    Payment[]
+  reminders   ReminderLog[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([householdId, periodStart])
+  @@index([status, dueDate])
+}
+
+model Payment {
+  id                 String        @id @default(cuid())
+  dueId              String
+  due                Due           @relation(fields: [dueId], references: [id], onDelete: Restrict)
+  amount             Decimal       @db.Decimal(10, 2)
+  method             PaymentMethod
+  status             PaymentStatus @default(PENDING)
+  provider           String        @default("paymongo")
+  providerCheckoutId String?       @unique
+  providerPaymentId  String?       @unique
+  referenceNumber    String        @unique
+  receiptNumber      String?       @unique
+  failureReason      String?
+  paidAt             DateTime?
+  webhookPayload     Json?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([dueId])
+  @@index([status])
+}
+
+// One row per reminder actually sent. dedupeKey keeps the daily job safe to
+// re-run and lets us send the same reminder type more than once.
+model ReminderLog {
+  id        String       @id @default(cuid())
+  dueId     String
+  due       Due          @relation(fields: [dueId], references: [id], onDelete: Cascade)
+  kind      ReminderKind
+  dedupeKey String
+  sentAt    DateTime     @default(now())
+
+  @@unique([dueId, dedupeKey])
+  @@index([dueId])
+}
+
+model BudgetEntry {
+  id          String     @id @default(cuid())
+  type        BudgetType
+  category    String
+  description String
+  amount      Decimal    @db.Decimal(10, 2)
+  occurredAt  DateTime   @db.Date
+  createdById String
+  createdBy   User       @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([occurredAt])
+  @@index([type])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, readAt])
+}
+
+model OtpCode {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose    OtpPurpose
+  channel    OtpChannel
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int        @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([userId, purpose])
+}
+
+model Feedback {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String?
+  message   String
+  status    FeedbackStatus @default(NEW)
+  adminNote String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actor       User?    @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
