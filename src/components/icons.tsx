@@ -134,3 +134,59 @@ export function CheckIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function WalletIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H18v4" />
+      <path d="M4 6.5V18a2 2 0 0 0 2 2h14V8H6.5A2.5 2.5 0 0 1 4 6.5Z" />
+      <path d="M16 13h2" />
+    </Icon>
+  );
+}
+
+export function AlertIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 4 3.5 19h17L12 4Z" />
+      <path d="M12 9v4.5" />
+      <path d="M12 16.5h.01" />
+    </Icon>
+  );
+}
+
+export function LogOutIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M10 5H5v14h5" />
+      <path d="M14 8l4 4-4 4" />
+      <path d="M18 12H9" />
+    </Icon>
+  );
+}
+
+export function SunIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </Icon>
+  );
+}
+
+export function MoonIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 14.5A8 8 0 0 1 9.5 4a8.2 8.2 0 1 0 10.5 10.5Z" />
+    </Icon>
+  );
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4.5 4.5" />
+    </Icon>
+  );
+}

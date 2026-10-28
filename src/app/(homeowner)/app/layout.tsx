@@ -1,7 +1,20 @@
 import { HomeownerShell } from "@/components/homeowner/homeowner-shell";
+import { requireRole } from "@/lib/auth";
 
-export default function HomeownerLayout({
+export default async function HomeownerLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <HomeownerShell>{children}</HomeownerShell>;
+  const user = await requireRole("HOMEOWNER");
+
+  return (
+    <HomeownerShell
+      user={{
+        email: user.email,
+        name: user.member?.firstName ?? "Homeowner",
+        unit: user.household?.unitAddress ?? null,
+      }}
+    >
+      {children}
+    </HomeownerShell>
+  );
 }

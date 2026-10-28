@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { loginAction } from "@/app/(auth)/actions";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardBody,
@@ -8,38 +11,72 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/form";
+import { getSessionUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const user = await getSessionUser();
+  if (user) {
+    redirect(user.role === "ADMIN" ? "/admin/dashboard" : "/app/dashboard");
+  }
+
+  const { error } = await searchParams;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>
-          Email and password authentication is built in Phase 1.
+          Use the email and password issued to your household.
         </CardDescription>
       </CardHeader>
-      <CardBody className="space-y-4">
-        <Alert tone="info" title="Not wired yet">
-          The seeded admin and homeowner accounts already exist in the database.
-          Phase 1 connects them to this form, adds session cookies and protects
-          the admin and homeowner routes.
-        </Alert>
-        <p className="text-sm text-muted">
-          Test credentials are listed in <code>README.md</code>.
+      <CardBody>
+        <form action={loginAction} className="space-y-4">
+          {error ? <Alert tone="danger">{error}</Alert> : null}
+
+          <Input
+            label="Email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+            placeholder="name@example.com"
+          />
+          <Input
+            label="Password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            placeholder="Your password"
+          />
+
+          <Button type="submit" className="w-full">
+            Sign in
+          </Button>
+        </form>
+
+        <p className="mt-4 text-xs text-muted">
+          Only confirmed accounts can sign in. Pending registrations must be
+          approved by an administrator first.
         </p>
-        <div className="flex flex-wrap gap-4 text-sm">
-          <Link href="/" className="text-forest underline underline-offset-4">
-            Back to preview
-          </Link>
+
+        <p className="mt-4 text-sm text-muted">
+          New household?{" "}
           <Link
-            href="/app/dashboard"
+            href="/register"
             className="text-forest underline underline-offset-4"
           >
-            View homeowner shell
+            Register your unit
           </Link>
-        </div>
+        </p>
       </CardBody>
     </Card>
   );

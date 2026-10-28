@@ -17,7 +17,8 @@ export default function AdminBudgetPage() {
 
       <Alert tone="warning" title="No receipt uploads">
         This prototype does not accept uploaded receipts. When paying dues,
-        homeowners are reminded to keep a screenshot of their PayMongo receipt.
+        homeowners are reminded to keep a screenshot of their GCash receipt
+        until the treasurer approves the payment.
       </Alert>
 
       <Card>

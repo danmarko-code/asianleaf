@@ -46,16 +46,30 @@ enum DueStatus {
 
 enum PaymentMethod {
   GCASH
-  MAYA
-  CARD
+  BANK_TRANSFER
 }
 
 enum PaymentStatus {
   PENDING
   PAID
-  FAILED
-  CANCELLED
-  EXPIRED
+  REJECTED
+}
+
+enum PaymentChannelType {
+  GCASH
+  BANK_TRANSFER
+}
+
+// Admins choose whether a violation is only a warning or requires a payment.
+enum ViolationKind {
+  WARNING
+  PAYMENT_REQUIRED
+}
+
+enum ViolationStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
 }
 
 enum BudgetType {
@@ -116,6 +130,8 @@ model User {
   reviewedRequests RegistrationRequest[] @relation("RequestReviewer")
   createdRequest   RegistrationRequest?  @relation("RequestCreatedUser")
   budgetEntries    BudgetEntry[]
+  reviewedPayments Payment[]             @relation("PaymentReviewer")
+  issuedViolations Violation[]           @relation("ViolationIssuer")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -139,27 +155,28 @@ model Session {
 }
 
 model Household {
-  id          String   @id @default(cuid())
-  unitAddress String   @unique
+  id          String      @id @default(cuid())
+  unitAddress String      @unique
   block       String?
   lot         String?
   members     Member[]
   dues        Due[]
   account     User?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  violations  Violation[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Member {
-  id             String        @id @default(cuid())
+  id             String            @id @default(cuid())
   householdId    String
-  household      Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  household      Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
   firstName      String
   lastName       String
   contactNumber  String
   email          String
   occupancyType  OccupancyType
-  status         MemberStatus  @default(ACTIVE)
+  status         MemberStatus      @default(ACTIVE)
   consentVersion String?
   consentAt      DateTime?
   accountUser    User?
@@ -167,8 +184,9 @@ model Member {
   pets           Pet[]
   vehicles       Vehicle[]
   occupants      HouseholdMember[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  violations     Violation[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@index([householdId])
   @@index([lastName, firstName])
@@ -250,42 +268,67 @@ model RegistrationRequest {
 }
 
 model Due {
-  id          String    @id @default(cuid())
+  id          String        @id @default(cuid())
   householdId String
-  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  periodStart DateTime  @db.Date
-  amount      Decimal   @db.Decimal(10, 2)
-  dueDate     DateTime  @db.Date
-  status      DueStatus @default(UNPAID)
+  household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  periodStart DateTime      @db.Date
+  amount      Decimal       @db.Decimal(10, 2)
+  dueDate     DateTime      @db.Date
+  status      DueStatus     @default(UNPAID)
   payments    Payment[]
   reminders   ReminderLog[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@unique([householdId, periodStart])
   @@index([status, dueDate])
 }
 
+// The HOA's own GCash account. The treasurer supplies display details and, when
+// available, the official QR image. No uploads are stored in the app.
+model PaymentChannel {
+  id            String             @id @default(cuid())
+  name          String
+  type          PaymentChannelType
+  accountName   String
+  accountNumber String
+  qrImageUrl    String?
+  instructions  String?
+  isActive      Boolean            @default(true)
+  sortOrder     Int                @default(0)
+  payments      Payment[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+// A payment is created as PENDING after the homeowner scans the HOA QR and
+// submits the reference number. The treasurer verifies the transfer and either
+// marks it PAID or rejects it with a reason.
 model Payment {
-  id                 String        @id @default(cuid())
-  dueId              String
-  due                Due           @relation(fields: [dueId], references: [id], onDelete: Restrict)
-  amount             Decimal       @db.Decimal(10, 2)
-  method             PaymentMethod
-  status             PaymentStatus @default(PENDING)
-  provider           String        @default("paymongo")
-  providerCheckoutId String?       @unique
-  providerPaymentId  String?       @unique
-  referenceNumber    String        @unique
-  receiptNumber      String?       @unique
-  failureReason      String?
-  paidAt             DateTime?
-  webhookPayload     Json?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  id              String          @id @default(cuid())
+  dueId           String
+  due             Due             @relation(fields: [dueId], references: [id], onDelete: Restrict)
+  channelId       String?
+  channel         PaymentChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  amount          Decimal         @db.Decimal(10, 2)
+  method          PaymentMethod
+  status          PaymentStatus   @default(PENDING)
+  referenceNumber String          @unique
+  receiptNumber   String?         @unique
+  notes           String?
+  paidAt          DateTime?
+  rejectionReason String?
+  reviewedById    String?
+  reviewedBy      User?           @relation("PaymentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([dueId])
   @@index([status])
+  @@index([channelId])
 }
 
 // One row per reminder actually sent. dedupeKey keeps the daily job safe to
@@ -358,6 +401,32 @@ model Feedback {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
+  @@index([status])
+}
+
+// A notice issued by the association to a household. Residents see open
+// violations in the app, including directly below their dashboard greeting.
+model Violation {
+  id             String          @id @default(cuid())
+  householdId    String
+  household      Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  memberId       String?
+  member         Member?         @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  kind           ViolationKind   @default(WARNING)
+  category       String
+  description    String
+  status         ViolationStatus @default(OPEN)
+  fineAmount     Decimal?        @db.Decimal(10, 2)
+  issuedAt       DateTime        @default(now())
+  dueDate        DateTime?       @db.Date
+  resolvedAt     DateTime?
+  resolutionNote String?
+  issuedById     String?
+  issuedBy       User?           @relation("ViolationIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([householdId, status])
   @@index([status])
 }
 

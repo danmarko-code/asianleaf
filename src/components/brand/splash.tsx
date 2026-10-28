@@ -38,7 +38,7 @@ export function Splash() {
     ).matches;
     const timer = window.setTimeout(
       () => setPhase("closing"),
-      reducedMotion ? 1500 : 1900,
+      reducedMotion ? 1400 : 2200,
     );
 
     return () => window.clearTimeout(timer);
@@ -59,7 +59,7 @@ export function Splash() {
 
   useEffect(() => {
     if (phase !== "closing") return;
-    const timer = window.setTimeout(() => setPhase("hidden"), 280);
+    const timer = window.setTimeout(() => setPhase("hidden"), 320);
     return () => window.clearTimeout(timer);
   }, [phase]);
 
@@ -76,47 +76,58 @@ export function Splash() {
   if (phase === "hidden") return null;
 
   const isChecking = phase === "checking";
+  const isClosing = phase === "closing";
 
   return (
     <div
       data-splash
       className={cn(
-        "fixed inset-0 z-50 flex flex-col items-center justify-center bg-cream transition-opacity duration-300",
-        phase === "closing" && "opacity-0",
+        "splash-root fixed inset-0 z-50 flex flex-col items-center justify-center bg-cream",
+        isClosing && "splash-closing opacity-0",
       )}
       onClick={() => {
         if (phase === "visible") setPhase("closing");
       }}
     >
-      <div className="flex flex-col items-center">
-        <LeafMark
-          className={cn(
-            "h-16 w-16 text-forest",
-            !isChecking && "splash-leaf",
-          )}
-        />
+      <div className="splash-content flex flex-col items-center">
         <div
-          className={cn("mt-5 text-center", !isChecking && "splash-word")}
+          className={cn(
+            "splash-mark-wrap flex h-20 w-20 items-center justify-center",
+            !isChecking && "splash-mark",
+          )}
         >
-          <p className="font-serif text-3xl font-semibold tracking-tight text-forest">
+          <LeafMark
+            className="h-16 w-16 text-forest"
+            veinClassName={!isChecking ? "splash-vein" : undefined}
+          />
+        </div>
+
+        <div className={cn("mt-6 text-center", !isChecking && "splash-copy")}>
+          <p className="splash-eyebrow text-[10px] font-medium uppercase tracking-[0.28em] text-muted">
+            Homeowners Association
+          </p>
+          <p className="splash-title mt-3 font-serif text-4xl font-semibold tracking-tight text-forest">
             Asian Leaf
           </p>
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted">
-            Homeowners Association
+          <p className="splash-place mt-3 text-[11px] uppercase tracking-[0.2em] text-muted">
+            General Trias, Cavite
           </p>
         </div>
       </div>
 
-      <div className="mt-10 h-0.5 w-40 overflow-hidden rounded-sm bg-line">
-        <div
-          className={cn("h-full bg-lime", !isChecking && "splash-bar")}
-        />
+      <div
+        className={cn(
+          "splash-progress mt-10 h-px w-48 overflow-hidden rounded-sm bg-line",
+          !isChecking && "splash-progress-in",
+        )}
+      >
+        <div className="splash-bar h-full w-full bg-lime" />
       </div>
 
       {phase === "visible" ? (
         <button
           type="button"
-          className="absolute bottom-8 text-sm text-muted hover:text-forest"
+          className="splash-skip absolute bottom-8 text-sm text-muted transition-colors hover:text-forest"
           onClick={(event) => {
             event.stopPropagation();
             setPhase("closing");

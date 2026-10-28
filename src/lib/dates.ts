@@ -51,3 +51,21 @@ export function formatMonthDay(date: Date) {
     timeZone: "UTC",
   }).format(date);
 }
+
+export function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "Asia/Manila",
+  }).format(date);
+}
+
+export function todayInputValue() {
+  const { year, month, day } = manilaNow();
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+export function dateFromInput(value: string) {
+  return new Date(`${value}T00:00:00.000Z`);
+}

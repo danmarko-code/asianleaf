@@ -11,8 +11,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Checkbox, Input, Select, Textarea } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { StatCard } from "@/components/ui/stat-card";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
+import { requireUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Style guide" };
@@ -61,21 +63,27 @@ function Section({
   );
 }
 
-export default function DesignPage() {
+export default async function DesignPage() {
+  const user = await requireUser();
+  const home = user.role === "ADMIN" ? "/admin/dashboard" : "/app/dashboard";
+
   return (
     <div className="min-h-screen bg-cream">
       <header className="border-b border-line">
         <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={home} className="flex items-center gap-2">
             <LeafMark className="h-7 w-7 text-forest" />
             <span className="font-serif text-lg text-forest">Asian Leaf</span>
           </Link>
-          <Link
-            href="/"
-            className="text-sm text-forest underline underline-offset-4"
-          >
-            Back to preview
-          </Link>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link
+              href={home}
+              className="text-sm text-forest underline underline-offset-4"
+            >
+              Back to dashboard
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -225,9 +233,17 @@ export default function DesignPage() {
             <Alert tone="warning" title="Balance still open">
               PHP 800.00 remains for October. The due date was November 5.
             </Alert>
-            <Alert tone="danger" title="Payment failed">
-              The checkout was not completed. No amount was deducted. You can
-              try again.
+            <Alert tone="danger" title="Payment rejected">
+              The reference number could not be verified. No amount was added to
+              your balance. Submit a corrected reference to try again.
+            </Alert>
+            <Alert tone="warning" title="Warning: No vehicle sticker">
+              Vehicle plate ABC 1234 was seen inside the subdivision without the
+              2026 HOA sticker. Please secure one from the office by Oct 30.
+            </Alert>
+            <Alert tone="danger" title="Payment required: Improper waste disposal">
+              Household waste was left outside the collection area. Please settle
+              the PHP 500.00 penalty by Oct 31.
             </Alert>
           </div>
         </Section>

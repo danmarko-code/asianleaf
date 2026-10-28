@@ -4,17 +4,20 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [users, households, members, dues] = await Promise.all([
-      prisma.user.count(),
-      prisma.household.count(),
-      prisma.member.count(),
-      prisma.due.count(),
-    ]);
+    const [users, households, members, dues, payments, violations] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.household.count(),
+        prisma.member.count(),
+        prisma.due.count(),
+        prisma.payment.count(),
+        prisma.violation.count(),
+      ]);
 
     return Response.json({
       ok: true,
       database: "up",
-      counts: { users, households, members, dues },
+      counts: { users, households, members, dues, payments, violations },
     });
   } catch {
     return Response.json(

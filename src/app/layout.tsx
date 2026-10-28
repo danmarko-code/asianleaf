@@ -27,16 +27,24 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f5f8ec",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f8ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f140b" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
+
+const themeScript = `(function(){try{var t=localStorage.getItem("asialeaf-theme");var d=t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);}catch(e){}})();`;
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={cn(inter.variable, playfair.variable)}>
         <noscript>
           <style>{`[data-splash] { display: none !important; }`}</style>

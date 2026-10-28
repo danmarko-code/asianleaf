@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Alert } from "@/components/ui/alert";
+import { buttonStyles } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -20,6 +22,13 @@ export default function AdminDuesPage() {
         until the full PHP 1,500.00 is settled. After the 5th, overdue reminders
         repeat weekly until the balance is fully paid.
       </Alert>
+
+      <Link
+        href="/admin/payments"
+        className={buttonStyles({ variant: "secondary" })}
+      >
+        Review pending GCash payments
+      </Link>
 
       <Card>
         <CardBody>

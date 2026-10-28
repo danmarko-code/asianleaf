@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LeafMark } from "@/components/brand/leaf-mark";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function AuthLayout({
   children,
@@ -12,6 +13,7 @@ export default function AuthLayout({
             <LeafMark className="h-7 w-7 text-forest" />
             <span className="font-serif text-lg text-forest">Asian Leaf</span>
           </Link>
+          <ThemeToggle className="ml-auto" />
         </div>
       </header>
 

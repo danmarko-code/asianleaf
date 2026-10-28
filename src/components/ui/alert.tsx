@@ -31,7 +31,11 @@ export function Alert({
       )}
       {...props}
     >
-      {title ? <p className="font-medium">{title}</p> : null}
+      {title ? (
+        <p className={cn("font-medium", tone === "danger" && "text-red")}>
+          {title}
+        </p>
+      ) : null}
       {children ? (
         <div className={cn(title ? "mt-1 text-muted" : "text-muted")}>
           {children}

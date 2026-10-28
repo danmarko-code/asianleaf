@@ -5,16 +5,21 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { LeafMark } from "@/components/brand/leaf-mark";
 import {
+  AlertIcon,
   ChartIcon,
   ChevronLeftIcon,
   CloseIcon,
   InboxIcon,
+  LogOutIcon,
   MenuIcon,
   MessageIcon,
   ReceiptIcon,
   UsersIcon,
+  WalletIcon,
   HomeIcon,
 } from "@/components/icons";
+import { logoutAction } from "@/app/(auth)/actions";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -22,19 +27,23 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: HomeIcon },
   { href: "/admin/members", label: "Members", icon: UsersIcon },
   { href: "/admin/dues", label: "Dues", icon: ReceiptIcon },
+  { href: "/admin/payments", label: "Payments", icon: WalletIcon },
   { href: "/admin/budget", label: "Budget", icon: ChartIcon },
   { href: "/admin/requests", label: "Register requests", icon: InboxIcon },
+  { href: "/admin/violations", label: "Violations", icon: AlertIcon },
   { href: "/admin/feedback", label: "Feedback", icon: MessageIcon },
 ];
 
 function SidebarContent({
   collapsed,
   pathname,
+  user,
   onNavigate,
   onToggle,
 }: {
   collapsed: boolean;
   pathname: string;
+  user: { name: string; email: string };
   onNavigate?: () => void;
   onToggle?: () => void;
 }) {
@@ -86,7 +95,39 @@ function SidebarContent({
         })}
       </nav>
 
-      <div className="border-t border-line p-2">
+      <div className="space-y-1 border-t border-line p-2">
+        <div
+          className={cn(
+            "flex items-center gap-3 rounded-md px-3 py-2",
+            collapsed && "justify-center px-0",
+          )}
+          title={collapsed ? user.email : undefined}
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-soft text-xs font-semibold uppercase text-forest">
+            {user.name.slice(0, 1)}
+          </span>
+          {!collapsed ? (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-ink">{user.name}</p>
+              <p className="truncate text-xs text-muted">{user.email}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className={cn(
+              "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-muted transition-colors hover:bg-cream hover:text-ink",
+              collapsed && "justify-center px-0",
+            )}
+            title={collapsed ? "Sign out" : undefined}
+          >
+            <LogOutIcon className="h-5 w-5 shrink-0" />
+            {!collapsed ? <span>Sign out</span> : null}
+          </button>
+        </form>
+
         {onToggle ? (
           <button
             type="button"
@@ -108,7 +149,13 @@ function SidebarContent({
   );
 }
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export function AdminShell({
+  children,
+  user,
+}: {
+  children: ReactNode;
+  user: { name: string; email: string };
+}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -162,6 +209,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <SidebarContent
           collapsed={collapsed}
           pathname={pathname}
+          user={user}
           onToggle={toggleCollapsed}
         />
       </aside>
@@ -188,6 +236,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <SidebarContent
               collapsed={false}
               pathname={pathname}
+              user={user}
               onNavigate={() => setMobileOpen(false)}
             />
           </aside>
@@ -215,8 +264,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <p className="truncate text-sm font-medium text-ink">{current}</p>
           </div>
 
-          <div className="ml-auto">
-            <Badge tone="neutral">Phase 0 preview</Badge>
+          <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle />
+            <span className="hidden text-xs text-muted sm:block">{user.email}</span>
+            <Badge tone="success">Confirmed</Badge>
           </div>
         </header>
 

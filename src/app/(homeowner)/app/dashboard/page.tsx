@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRightIcon } from "@/components/icons";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonStyles } from "@/components/ui/button";
 import {
   Card,
   CardBody,
@@ -11,8 +12,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { requireRole } from "@/lib/auth";
 import { MONTHLY_DUES } from "@/lib/constants";
-import { formatMonthDay, greetingForHour, manilaNow, nextDueDate } from "@/lib/dates";
+import { formatDate, formatMonthDay, greetingForHour, manilaNow } from "@/lib/dates";
+import { prisma } from "@/lib/db";
 import { formatPeso } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Home" };
@@ -35,43 +38,161 @@ const links = [
   },
 ];
 
-export default function HomeownerDashboardPage() {
+export default async function HomeownerDashboardPage() {
+  const user = await requireRole("HOMEOWNER");
   const greeting = greetingForHour(manilaNow().hour);
-  const dueDate = nextDueDate();
+  const name = user.member?.firstName ?? "Homeowner";
+  const householdId = user.householdId;
+
+  if (!householdId) {
+    return (
+      <div className="space-y-5">
+        <PageHeader
+          eyebrow="Asian Leaf HOA"
+          title={`${greeting}, ${name}.`}
+          description="Your account is not linked to a household yet."
+        />
+        <Alert tone="warning" title="Household link missing">
+          Contact the association office so your login can be linked to your
+          unit.
+        </Alert>
+      </div>
+    );
+  }
+
+  const [due, openViolations] = await Promise.all([
+    prisma.due.findFirst({
+      where: {
+        householdId,
+        status: { in: ["UNPAID", "PARTIALLY_PAID"] },
+      },
+      orderBy: { dueDate: "asc" },
+      include: {
+        payments: {
+          where: { status: "PAID" },
+          select: { amount: true },
+        },
+      },
+    }),
+    prisma.violation.findMany({
+      where: { householdId, status: "OPEN" },
+      orderBy: { issuedAt: "desc" },
+    }),
+  ]);
+
+  const balance = due
+    ? Number(due.amount) -
+      due.payments.reduce((total, payment) => total + Number(payment.amount), 0)
+    : 0;
+
+  const violation = openViolations[0];
 
   return (
     <div className="space-y-5">
       <PageHeader
         eyebrow="Asian Leaf HOA"
-        title={`${greeting}.`}
-        description="Sign in to see your household balance, payment history and reminders."
+        title={`${greeting}, ${name}.`}
+        description={
+          user.household?.unitAddress
+            ? `${user.household.unitAddress}. Here is your household at a glance.`
+            : "Here is your household at a glance."
+        }
       />
+
+      {violation ? (
+        <Alert
+          tone="danger"
+          title={
+            violation.kind === "PAYMENT_REQUIRED"
+              ? `Payment required: ${violation.category}`
+              : `Warning: ${violation.category}`
+          }
+        >
+          <p>{violation.description}</p>
+          <p className="mt-2 text-xs">
+            Issued {formatDate(violation.issuedAt)}
+            {violation.fineAmount
+              ? ` · Fine ${formatPeso(Number(violation.fineAmount))}`
+              : ""}
+            {violation.dueDate
+              ? ` · Due ${formatMonthDay(violation.dueDate)}`
+              : ""}
+          </p>
+          <Link
+            href="/app/violations"
+            className="mt-2 inline-block text-sm font-medium text-forest underline underline-offset-4"
+          >
+            View violation details
+          </Link>
+        </Alert>
+      ) : null}
 
       <Card>
         <CardHeader className="flex items-center justify-between gap-3">
           <div>
-            <CardTitle>Next dues</CardTitle>
-            <CardDescription>Billed per household on the 5th of each month.</CardDescription>
+            <CardTitle>{due ? "Next dues" : "Dues"}</CardTitle>
+            <CardDescription>
+              Billed per household on the 5th of each month.
+            </CardDescription>
           </div>
-          <Badge tone="warning">Sign-in required</Badge>
+          <Badge tone={due ? "warning" : "success"}>
+            {due ? (balance < Number(due.amount) ? "Partially paid" : "Unpaid") : "Paid up"}
+          </Badge>
         </CardHeader>
         <CardBody>
-          <p className="tabular font-serif text-4xl text-forest">
-            {formatPeso(MONTHLY_DUES)}
-          </p>
-          <p className="mt-2 text-sm text-muted">
-            Due {formatMonthDay(dueDate)}. Your current balance and payment
-            history will appear here after sign-in is connected.
-          </p>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Button disabled>Pay dues</Button>
-            <p className="text-xs text-muted">
-              Payment opens once PayMongo checkout is connected. Partial
-              payments are allowed, but the balance must reach the full amount.
-            </p>
-          </div>
+          {due ? (
+            <>
+              <p className="tabular font-serif text-4xl text-forest">
+                {formatPeso(balance)}
+              </p>
+              <p className="mt-2 text-sm text-muted">
+                Billing period starts {formatMonthDay(due.periodStart)}. Due{" "}
+                {formatMonthDay(due.dueDate)}. Full dues are{" "}
+                {formatPeso(Number(due.amount))}; partial payments are allowed.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Link href="/app/payments" className={buttonStyles()}>
+                  Pay dues
+                </Link>
+                <p className="text-xs text-muted">
+                  Scan the HOA GCash QR, then submit your reference number for
+                  verification.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="tabular font-serif text-4xl text-forest">
+                {formatPeso(0)}
+              </p>
+              <p className="mt-2 text-sm text-muted">
+                No open balance right now. The next billing period is{" "}
+                {formatPeso(MONTHLY_DUES)}.
+              </p>
+              <div className="mt-5">
+                <Link
+                  href="/app/payments"
+                  className={buttonStyles({ variant: "secondary" })}
+                >
+                  View payment history
+                </Link>
+              </div>
+            </>
+          )}
         </CardBody>
       </Card>
+
+      {openViolations.length > 1 ? (
+        <p className="text-sm text-muted">
+          You have {openViolations.length} open violations.{" "}
+          <Link
+            href="/app/violations"
+            className="text-forest underline underline-offset-4"
+          >
+            Review all
+          </Link>
+        </p>
+      ) : null}
 
       <Card className="divide-y divide-line">
         {links.map((link) => (

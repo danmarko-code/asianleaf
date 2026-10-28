@@ -255,9 +255,21 @@ async function main() {
   }
 
   // ---------- Registration requests ----------
+  const carloPayload = {
+    occupancyType: "OWNER_OCCUPIED",
+    block: "2",
+    lot: "14",
+    kasambahay: [{ fullName: "Beth Mendoza" }],
+    pets: [{ name: "Coco", breed: "Poodle", count: 1 }],
+    vehicles: [{ plateNumber: "XYZ 9012", count: 1 }],
+    householdMembers: [
+      { fullName: "Elena Mendoza", relationship: "Spouse" },
+    ],
+  };
+
   await prisma.registrationRequest.upsert({
     where: { id: "req_001" },
-    update: {},
+    update: { payload: carloPayload },
     create: {
       id: "req_001",
       firstName: "Carlo",
@@ -268,18 +280,29 @@ async function main() {
       passwordHash: hashSync("Carlo2026", 12),
       consentVersion: CONSENT_VERSION,
       consentAt: monthDate(0, 20),
-      payload: {
-        kasambahay: [{ fullName: "Beth Mendoza" }],
-        pets: [{ name: "Coco", breed: "Poodle", count: 1 }],
-        vehicles: [{ plateNumber: "XYZ 9012", count: 1 }],
-        householdMembers: [{ fullName: "Elena Mendoza", relationship: "Spouse" }],
-      },
+      payload: carloPayload,
     },
   });
 
+  const gracePayload = {
+    occupancyType: "TENANT",
+    block: "4",
+    lot: "9",
+    kasambahay: [],
+    pets: [
+      { name: "Milo", breed: "Aspin", count: 1 },
+      { name: "Tofu", breed: "Puspin", count: 1 },
+    ],
+    vehicles: [{ plateNumber: "QRS 3456", count: 1 }],
+    householdMembers: [
+      { fullName: "Mark Villanueva", relationship: "Spouse" },
+      { fullName: "Mia Villanueva", relationship: "Daughter" },
+    ],
+  };
+
   await prisma.registrationRequest.upsert({
     where: { id: "req_002" },
-    update: {},
+    update: { payload: gracePayload },
     create: {
       id: "req_002",
       firstName: "Grace",
@@ -290,18 +313,7 @@ async function main() {
       passwordHash: hashSync("Grace2026", 12),
       consentVersion: CONSENT_VERSION,
       consentAt: monthDate(0, 24),
-      payload: {
-        kasambahay: [],
-        pets: [
-          { name: "Milo", breed: "Aspin", count: 1 },
-          { name: "Tofu", breed: "Puspin", count: 1 },
-        ],
-        vehicles: [{ plateNumber: "QRS 3456", count: 1 }],
-        householdMembers: [
-          { fullName: "Mark Villanueva", relationship: "Spouse" },
-          { fullName: "Mia Villanueva", relationship: "Daughter" },
-        ],
-      },
+      payload: gracePayload,
     },
   });
 
@@ -357,59 +369,124 @@ async function main() {
     return due.id;
   };
 
+  // ---------- Payment channels ----------
+  // In this flow the homeowner scans the HOA's own GCash QR, sends the money,
+  // and submits the reference number. The treasurer verifies it.
+  const paymentChannels = [
+    {
+      id: "ch_gcash",
+      name: "GCash",
+      type: "GCASH" as const,
+      accountName: "Asian Leaf HOA",
+      accountNumber: "0917 000 0000",
+      qrImageUrl: null,
+      instructions:
+        "Open GCash, scan the HOA QR, and send the amount. Then submit the GCash reference number here.",
+      sortOrder: 1,
+    },
+  ];
+
+  for (const channel of paymentChannels) {
+    await prisma.paymentChannel.upsert({
+      where: { id: channel.id },
+      update: channel,
+      create: { ...channel, isActive: true },
+    });
+  }
+
   // ---------- Payments ----------
-  // Paid rows represent money already settled; pending rows represent an
-  // unfinished checkout and must never count toward the balance.
+  // Paid rows represent money already verified by the treasurer. Pending rows
+  // are claims that must never count toward the balance until approved.
   const payments = [
     {
       id: "pay_001",
       dueId: dueId("hh_001"),
+      channelId: "ch_gcash",
       amount: 1500,
       method: "GCASH" as const,
       status: "PAID" as const,
       referenceNumber: "AL-SEED-0001",
       receiptNumber: "RCPT-2026-0001",
+      notes: "October dues, full payment.",
       paidAt: monthDate(0, 4),
+      reviewedById: "usr_treasurer",
+      reviewedAt: monthDate(0, 4),
+      rejectionReason: null,
     },
     {
       id: "pay_002",
       dueId: dueId("hh_002"),
+      channelId: "ch_gcash",
       amount: 700,
-      method: "MAYA" as const,
+      method: "GCASH" as const,
       status: "PAID" as const,
       referenceNumber: "AL-SEED-0002",
       receiptNumber: "RCPT-2026-0002",
+      notes: "Partial payment for October.",
       paidAt: monthDate(0, 6),
+      reviewedById: "usr_treasurer",
+      reviewedAt: monthDate(0, 6),
+      rejectionReason: null,
     },
     {
       id: "pay_003",
       dueId: dueId("hh_004"),
+      channelId: "ch_gcash",
       amount: 500,
-      method: "CARD" as const,
+      method: "GCASH" as const,
       status: "PAID" as const,
       referenceNumber: "AL-SEED-0003",
       receiptNumber: "RCPT-2026-0003",
+      notes: "First partial payment.",
       paidAt: monthDate(0, 2),
+      reviewedById: "usr_treasurer",
+      reviewedAt: monthDate(0, 2),
+      rejectionReason: null,
     },
     {
       id: "pay_004",
       dueId: dueId("hh_004"),
+      channelId: "ch_gcash",
       amount: 1000,
       method: "GCASH" as const,
       status: "PAID" as const,
       referenceNumber: "AL-SEED-0004",
       receiptNumber: "RCPT-2026-0004",
+      notes: "Balance of the October dues.",
       paidAt: monthDate(0, 9),
+      reviewedById: "usr_treasurer",
+      reviewedAt: monthDate(0, 9),
+      rejectionReason: null,
     },
     {
       id: "pay_005",
       dueId: dueId("hh_005"),
+      channelId: "ch_gcash",
       amount: 1500,
       method: "GCASH" as const,
       status: "PENDING" as const,
       referenceNumber: "AL-SEED-0005",
       receiptNumber: null,
-      paidAt: null,
+      notes: "Sent through GCash at 8:42 AM. Awaiting treasurer verification.",
+      paidAt: monthDate(0, 27),
+      reviewedById: null,
+      reviewedAt: null,
+      rejectionReason: null,
+    },
+    {
+      id: "pay_006",
+      dueId: dueId("hh_003"),
+      channelId: "ch_gcash",
+      amount: 1500,
+      method: "GCASH" as const,
+      status: "PENDING" as const,
+      referenceNumber: "AL-SEED-0006",
+      receiptNumber: null,
+      notes: "Sent through GCash at 9:05 AM. Awaiting treasurer verification.",
+      paidAt: monthDate(0, 27),
+      reviewedById: null,
+      reviewedAt: null,
+      rejectionReason: null,
     },
   ];
 
@@ -420,6 +497,10 @@ async function main() {
       create: payment,
     });
   }
+
+  // Remove the old bank channel from earlier seed runs after its payments have
+  // been moved to GCash.
+  await prisma.paymentChannel.deleteMany({ where: { id: "ch_bank" } });
 
   // Previous-month payments, kept simple so the dashboard has history.
   const previousDues = await prisma.due.findMany({
@@ -435,27 +516,26 @@ async function main() {
 
   for (const [index, householdId] of ["hh_001", "hh_003", "hh_004", "hh_005"].entries()) {
     const id = `pay_prev_${index + 1}`;
+    const paidAt = monthDate(-1, 3 + index);
+    const payment = {
+      dueId: previousDueId(householdId),
+      channelId: "ch_gcash",
+      amount: 1500,
+      method: "GCASH" as const,
+      status: "PAID" as const,
+      referenceNumber: `AL-SEED-P0${index + 1}`,
+      receiptNumber: `RCPT-PREV-000${index + 1}`,
+      notes: "Previous month dues, paid in full.",
+      paidAt,
+      reviewedById: "usr_treasurer",
+      reviewedAt: paidAt,
+      rejectionReason: null,
+    };
+
     await prisma.payment.upsert({
       where: { id },
-      update: {
-        dueId: previousDueId(householdId),
-        amount: 1500,
-        method: "GCASH",
-        status: "PAID",
-        referenceNumber: `AL-SEED-P0${index + 1}`,
-        receiptNumber: `RCPT-PREV-000${index + 1}`,
-        paidAt: monthDate(-1, 3 + index),
-      },
-      create: {
-        id,
-        dueId: previousDueId(householdId),
-        amount: 1500,
-        method: "GCASH",
-        status: "PAID",
-        referenceNumber: `AL-SEED-P0${index + 1}`,
-        receiptNumber: `RCPT-PREV-000${index + 1}`,
-        paidAt: monthDate(-1, 3 + index),
-      },
+      update: payment,
+      create: { id, ...payment },
     });
   }
 
@@ -579,6 +659,68 @@ async function main() {
     });
   }
 
+  // ---------- Violations ----------
+  // Admins issue these directly to a resident's household. A violation can be
+  // a plain warning or require a payment with a due date.
+  const violations = [
+    {
+      id: "vio_001",
+      householdId: "hh_001",
+      memberId: "mem_maria",
+      kind: "WARNING" as const,
+      category: "No vehicle sticker",
+      description:
+        "Vehicle with plate ABC 1234 was seen inside the subdivision without the 2026 HOA sticker. Please secure a sticker from the office.",
+      status: "OPEN" as const,
+      fineAmount: null,
+      issuedAt: monthDate(0, 22),
+      dueDate: monthDate(0, 30),
+      resolvedAt: null,
+      resolutionNote: null,
+      issuedById: "usr_admin",
+    },
+    {
+      id: "vio_002",
+      householdId: "hh_003",
+      memberId: "mem_ana",
+      kind: "PAYMENT_REQUIRED" as const,
+      category: "Improper waste disposal",
+      description:
+        "Household waste was left outside the designated collection area after collection day. Please settle the corresponding penalty.",
+      status: "OPEN" as const,
+      fineAmount: 500,
+      issuedAt: monthDate(0, 18),
+      dueDate: monthDate(0, 31),
+      resolvedAt: null,
+      resolutionNote: null,
+      issuedById: "usr_admin",
+    },
+    {
+      id: "vio_003",
+      householdId: "hh_002",
+      memberId: "mem_jose",
+      kind: "PAYMENT_REQUIRED" as const,
+      category: "Unregistered pet",
+      description:
+        "A second dog was observed at the unit but is not listed in the household record.",
+      status: "RESOLVED" as const,
+      fineAmount: 300,
+      issuedAt: monthDate(-1, 15),
+      dueDate: monthDate(-1, 25),
+      resolvedAt: monthDate(-1, 22),
+      resolutionNote: "Penalty settled and the pet was added to the household record.",
+      issuedById: "usr_admin",
+    },
+  ];
+
+  for (const violation of violations) {
+    await prisma.violation.upsert({
+      where: { id: violation.id },
+      update: violation,
+      create: violation,
+    });
+  }
+
   // ---------- Reminder history ----------
   const previousAnaDue = previousDueId("hh_003");
   await prisma.reminderLog.upsert({
@@ -603,6 +745,8 @@ async function main() {
     members: await prisma.member.count(),
     dues: await prisma.due.count(),
     payments: await prisma.payment.count(),
+    paymentChannels: await prisma.paymentChannel.count(),
+    violations: await prisma.violation.count(),
     budgetEntries: await prisma.budgetEntry.count(),
     registrationRequests: await prisma.registrationRequest.count(),
     feedback: await prisma.feedback.count(),

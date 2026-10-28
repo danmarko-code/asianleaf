@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { RegisterForm } from "@/app/(auth)/register/register-form";
+import { buttonStyles } from "@/components/ui/button";
 import {
   Card,
   CardBody,
@@ -7,44 +10,44 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getSessionUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Register" };
 
-export default function RegisterPage() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Register your household</CardTitle>
-        <CardDescription>
-          Two-step registration opens in Phase 2.
-        </CardDescription>
-      </CardHeader>
-      <CardBody className="space-y-4">
-        <ol className="space-y-3 text-sm text-muted">
-          <li>
-            <span className="font-medium text-ink">Step 1 — Account and unit.</span>{" "}
-            Name, contact number, email, password, ownership type and unit
-            address.
-          </li>
-          <li>
-            <span className="font-medium text-ink">Step 2 — Household.</span>{" "}
-            Kasambahay, pets, vehicles and other household members, plus the
-            Data Privacy Act consent.
-          </li>
-          <li>
-            <span className="font-medium text-ink">Approval.</span> An admin
-            reviews the request. Approval creates the household record and its
-            single login.
-          </li>
-        </ol>
-        <p className="text-sm text-muted">
-          Each household gets one login. The consent text does not ask for names
-          or email addresses inside the notice itself.
-        </p>
-        <Link href="/" className="text-sm text-forest underline underline-offset-4">
-          Back to preview
-        </Link>
-      </CardBody>
-    </Card>
-  );
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ submitted?: string }>;
+}) {
+  const user = await getSessionUser();
+  if (user) {
+    redirect(user.role === "ADMIN" ? "/admin/dashboard" : "/app/dashboard");
+  }
+
+  const { submitted } = await searchParams;
+
+  if (submitted) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Registration received</CardTitle>
+          <CardDescription>
+            Your household request is waiting for administrator review.
+          </CardDescription>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <p className="text-sm text-muted">
+            The association will check the unit and household details. Once
+            approved, you can sign in with the email and password you submitted.
+            No login is active yet.
+          </p>
+          <Link href="/login" className={buttonStyles({ className: "w-full" })}>
+            Back to sign in
+          </Link>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  return <RegisterForm />;
 }

@@ -1,4 +1,10 @@
-export function LeafMark({ className }: { className?: string }) {
+export function LeafMark({
+  className,
+  veinClassName,
+}: {
+  className?: string;
+  veinClassName?: string;
+}) {
   return (
     <svg
       viewBox="0 0 48 48"
@@ -11,6 +17,7 @@ export function LeafMark({ className }: { className?: string }) {
         fill="currentColor"
       />
       <path
+        className={veinClassName}
         d="M12 38C18 30 25 23 34 15"
         stroke="var(--color-lime)"
         strokeWidth="2.2"
