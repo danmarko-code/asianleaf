@@ -37,10 +37,10 @@ const colors = [
 ];
 
 const tableRows = [
-  ["12 Sampaguita St., Phase 1", "Maria Santos", "Owner-occupied", "PHP 0.00"],
-  ["8 Ilang-Ilang St., Phase 1", "Jose Reyes", "Owner", "PHP 800.00"],
-  ["22 Narra St., Phase 2", "Ana Dela Cruz", "Tenant", "PHP 1,500.00"],
-  ["5 Acacia Lane, Phase 2", "Pedro Lim", "Owner-occupied", "PHP 0.00"],
+  ["12 Sampaguita St.", "Maria Santos", "Owner-occupied", "PHP 0.00"],
+  ["8 Ilang-Ilang St.", "Jose Reyes", "Owner", "PHP 800.00"],
+  ["22 Narra St.", "Ana Dela Cruz", "Tenant", "PHP 1,500.00"],
+  ["5 Acacia Lane", "Pedro Lim", "Owner-occupied", "PHP 0.00"],
 ];
 
 function Section({
@@ -174,7 +174,7 @@ export default async function DesignPage() {
               <div className="sm:col-span-2">
                 <Textarea
                   label="Feedback"
-                  defaultValue="Please repaint the parking markings near Phase 2."
+                  defaultValue="Please repaint the parking markings near Narra St."
                   hint="Keep it specific so the association can act on it."
                 />
               </div>

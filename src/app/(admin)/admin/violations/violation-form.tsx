@@ -16,11 +16,34 @@ export function ViolationForm({ households }: { households: Household[] }) {
   const [householdId, setHouseholdId] = useState(households[0]?.id ?? "");
   const [memberId, setMemberId] = useState("");
   const [kind, setKind] = useState<"WARNING" | "PAYMENT_REQUIRED">("WARNING");
+  const [violationDate, setViolationDate] = useState(todayInputValue());
+  const [paymentDueDate, setPaymentDueDate] = useState("");
+  const [dueDateError, setDueDateError] = useState("");
 
   const household = households.find((row) => row.id === householdId);
 
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    if (
+      kind === "PAYMENT_REQUIRED" &&
+      paymentDueDate &&
+      violationDate &&
+      paymentDueDate <= violationDate
+    ) {
+      event.preventDefault();
+      setDueDateError(
+        "Payment due date must be after the date of violation."
+      );
+      return;
+    }
+    setDueDateError("");
+  }
+
   return (
-    <form action={createViolationAction} className="space-y-4">
+    <form
+      action={createViolationAction}
+      className="space-y-4"
+      onSubmit={handleSubmit}
+    >
       <div className="grid gap-4 sm:grid-cols-2">
         <Select
           label="Household"
@@ -70,7 +93,11 @@ export function ViolationForm({ households }: { households: Household[] }) {
           label="Date of violation"
           name="issuedAt"
           type="date"
-          defaultValue={todayInputValue()}
+          value={violationDate}
+          onChange={(event) => {
+            setViolationDate(event.target.value);
+            setDueDateError("");
+          }}
           required
         />
 
@@ -99,7 +126,17 @@ export function ViolationForm({ households }: { households: Household[] }) {
               name="dueDate"
               type="date"
               required
+              value={paymentDueDate}
+              onChange={(event) => {
+                setPaymentDueDate(event.target.value);
+                setDueDateError("");
+              }}
             />
+            {dueDateError && (
+              <p className="text-sm text-red-600 dark:text-red-400 sm:col-span-2">
+                {dueDateError}
+              </p>
+            )}
           </>
         ) : null}
       </div>

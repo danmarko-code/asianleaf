@@ -58,8 +58,8 @@ cp .env.example .env
 The file should contain:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/asialeaf_dev?schema=public"
-DIRECT_URL="postgresql://postgres:postgres@localhost:5432/asialeaf_dev?schema=public"
+DATABASE_URL="postgresql://postgres:yourpassword@localhost:5432/asialeaf_dev?schema=public"
+DIRECT_URL="postgresql://postgres:yourpassword@localhost:5432/asialeaf_dev?schema=public"
 APP_URL="http://localhost:3000"
 CRON_SECRET="replace-with-a-long-random-string"
 ```
@@ -128,9 +128,9 @@ administrator approves them.
 1. Open `/register`.
 2. **Step 1 — Account and unit:** first/last name, email (this becomes the
    login), 11-digit contact number, password (8+ characters, upper and lower
-   case, one number), **phase**, **street** (dropdown, with an *Other street*
+   case, one number), **street** (dropdown, with an *Other street*
    option), **block** and **lot**. A live preview shows the composed address,
-   for example `Blk 2 Lot 14, Sampaguita St., Phase 1`.
+   for example `Blk 2 Lot 14, Sampaguita St.`.
 3. **Step 2 — Household:** dependents with a relationship, kasambahay with
    their 11-digit contacts, pets, vehicles and the Data Privacy consent.
 4. Submit. Nothing is activated yet; the request is stored as `PENDING`.
@@ -140,7 +140,7 @@ administrator approves them.
 ### 2.3 Review registrations (admin)
 
 1. Go to **Register requests**.
-2. Each card shows contact details, phase/street/block/lot, household members,
+2. Each card shows contact details, street/block/lot, household members,
    kasambahay, pets, vehicles and consent.
 3. Correct the unit fields if the applicant mistyped them, then **Approve**.
    Approval creates the household, primary resident, dependents, kasambahay,
@@ -151,10 +151,10 @@ administrator approves them.
 ### 2.4 Find and edit member records (admin)
 
 1. Open **Members**.
-2. Filter by free-text search, **street dropdown**, **phase**, **block**, **lot**,
+2. Filter by free-text search, **street dropdown**, **block**, **lot**,
    occupancy and status.
 3. Click a resident's name to open the household record:
-   - **Overview** — edit the primary resident and the unit (phase/street/block/
+   - **Overview** — edit the primary resident and the unit (street/block/
      lot) and review recent dues.
    - **Household** — add or remove dependents.
    - **Kasambahay**, **Pets**, **Vehicles** — add or remove records.
@@ -257,13 +257,13 @@ useful for testing admin-only records.
 
 ### Households
 
-| ID | Unit address | Phase | Street | Block | Lot | Login |
-| --- | --- | --- | --- | --- | --- | --- |
-| `hh_001` | Blk 1 Lot 12, Sampaguita St., Phase 1 | Phase 1 | Sampaguita St. | 1 | 12 | maria |
-| `hh_002` | Blk 1 Lot 8, Ilang-Ilang St., Phase 1 | Phase 1 | Ilang-Ilang St. | 1 | 8 | jose |
-| `hh_003` | Blk 2 Lot 22, Narra St., Phase 2 | Phase 2 | Narra St. | 2 | 22 | ana |
-| `hh_004` | Blk 2 Lot 5, Acacia Lane, Phase 2 | Phase 2 | Acacia Lane | 2 | 5 | pedro |
-| `hh_005` | Blk 3 Lot 31, Molave St., Phase 3 | Phase 3 | Molave St. | 3 | 31 | none |
+| ID | Unit address | Street | Block | Lot | Login |
+| --- | --- | --- | --- | --- | --- |
+| `hh_001` | Blk 1 Lot 12, Sampaguita St. | Sampaguita St. | 1 | 12 | maria |
+| `hh_002` | Blk 1 Lot 8, Ilang-Ilang St. | Ilang-Ilang St. | 1 | 8 | jose |
+| `hh_003` | Blk 2 Lot 22, Narra St. | Narra St. | 2 | 22 | ana |
+| `hh_004` | Blk 2 Lot 5, Acacia Lane | Acacia Lane | 2 | 5 | pedro |
+| `hh_005` | Blk 3 Lot 31, Molave St. | Molave St. | 3 | 31 | none |
 
 ### Members and property
 
@@ -312,8 +312,8 @@ repairs and utilities (expense).
 
 | Applicant | Unit | Status | Password |
 | --- | --- | --- | --- |
-| Carlo Mendoza | Blk 2 Lot 14, Sampaguita St., Phase 1 | Pending | `Carlo2026` |
-| Grace Villanueva | Blk 4 Lot 9, Narra St., Phase 2 | Pending | `Grace2026` |
+| Carlo Mendoza | Blk 2 Lot 14, Sampaguita St. | Pending | `Carlo2026` |
+| Grace Villanueva | Blk 4 Lot 9, Narra St. | Pending | `Grace2026` |
 
 Requests submitted through the app are additional pending rows; approve or
 reject them from **Register requests**.
@@ -377,7 +377,7 @@ session, expiry and status checks.
 2. The seed runs twice without changing counts.
 3. Registration rejects duplicate email, unit and pending requests.
 4. Approving a request creates the household, login and all submitted records.
-5. `/admin/members` filters by street, phase, block and lot.
+5. `/admin/members` filters by street, block and lot.
 6. Editing a member or household writes an audit entry.
 7. Generating dues twice creates one due per household per month.
 8. Running reminders twice sends nothing the second time.

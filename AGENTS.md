@@ -41,7 +41,7 @@ npm run db:studio
   approve/reject, receipt and due updates. No receipt uploads.
 - **Violations:** warning or payment-required notices, household/member targeting,
   resolve/dismiss, red dashboard alert.
-- **Members:** search by name/email/contact/address; filters for street/phase,
+- **Members:** search by name/email/contact/address; filters for street,
   block, occupancy, status.
 - **Dark mode:** persisted theme toggle in auth/admin/homeowner headers and design
   guide; system preference on first visit.

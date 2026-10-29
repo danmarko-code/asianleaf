@@ -30,7 +30,7 @@ import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
 import { formatDate, formatMonthDay } from "@/lib/dates";
 import { prisma } from "@/lib/db";
-import { OTHER_STREET, PHASES, STREETS } from "@/lib/locations";
+import { OTHER_STREET, STREETS } from "@/lib/locations";
 import { formatPeso } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Member record" };
@@ -219,7 +219,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Household unit</CardTitle>
               <CardDescription>
-                Block and lot identify the unit inside a phase.
+                Block and lot identify the unit.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -227,17 +227,7 @@ export default async function AdminMemberDetailPage({
                 <input type="hidden" name="memberId" value={member.id} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Select
-                    label="Phase"
-                    name="phase"
-                    defaultValue={household.phase ?? PHASES[0]}
-                  >
-                    {PHASES.map((phase) => (
-                      <option key={phase} value={phase}>
-                        {phase}
-                      </option>
-                    ))}
-                  </Select>
-                  <Select
+                    className="sm:col-span-2"
                     label="Street"
                     name="streetChoice"
                     defaultValue={

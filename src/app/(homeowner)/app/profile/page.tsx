@@ -100,7 +100,7 @@ export default async function HomeownerProfilePage({
         <CardBody className="space-y-1 text-sm">
           <p className="font-medium text-ink">{household.unitAddress}</p>
           <p className="text-muted">
-            {household.phase ?? "Phase not set"} · Block{" "}
+            Block{" "}
             {household.block ?? "—"} · Lot {household.lot ?? "—"}
           </p>
           <p className="text-muted">

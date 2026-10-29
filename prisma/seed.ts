@@ -36,40 +36,40 @@ async function main() {
   const households = [
     {
       id: "hh_001",
-      unitAddress: "Blk 1 Lot 12, Sampaguita St., Phase 1",
-      phase: "Phase 1",
+      unitAddress: "Blk 1 Lot 12, Sampaguita St.",
+
       street: "Sampaguita St.",
       block: "1",
       lot: "12",
     },
     {
       id: "hh_002",
-      unitAddress: "Blk 1 Lot 8, Ilang-Ilang St., Phase 1",
-      phase: "Phase 1",
+      unitAddress: "Blk 1 Lot 8, Ilang-Ilang St.",
+
       street: "Ilang-Ilang St.",
       block: "1",
       lot: "8",
     },
     {
       id: "hh_003",
-      unitAddress: "Blk 2 Lot 22, Narra St., Phase 2",
-      phase: "Phase 2",
+      unitAddress: "Blk 2 Lot 22, Narra St.",
+
       street: "Narra St.",
       block: "2",
       lot: "22",
     },
     {
       id: "hh_004",
-      unitAddress: "Blk 2 Lot 5, Acacia Lane, Phase 2",
-      phase: "Phase 2",
+      unitAddress: "Blk 2 Lot 5, Acacia Lane",
+
       street: "Acacia Lane",
       block: "2",
       lot: "5",
     },
     {
       id: "hh_005",
-      unitAddress: "Blk 3 Lot 31, Molave St., Phase 3",
-      phase: "Phase 3",
+      unitAddress: "Blk 3 Lot 31, Molave St.",
+
       street: "Molave St.",
       block: "3",
       lot: "31",
@@ -312,8 +312,8 @@ async function main() {
     where: { id: "req_001" },
     update: {
       payload: carloPayload,
-      unitAddress: "Blk 2 Lot 14, Sampaguita St., Phase 1",
-      phase: "Phase 1",
+      unitAddress: "Blk 2 Lot 14, Sampaguita St.",
+
       street: "Sampaguita St.",
       block: "2",
       lot: "14",
@@ -324,8 +324,8 @@ async function main() {
       lastName: "Mendoza",
       email: "carlo.mendoza@example.test",
       contactNumber: "09171000007",
-      unitAddress: "Blk 2 Lot 14, Sampaguita St., Phase 1",
-      phase: "Phase 1",
+      unitAddress: "Blk 2 Lot 14, Sampaguita St.",
+
       street: "Sampaguita St.",
       block: "2",
       lot: "14",
@@ -354,8 +354,8 @@ async function main() {
     where: { id: "req_002" },
     update: {
       payload: gracePayload,
-      unitAddress: "Blk 4 Lot 9, Narra St., Phase 2",
-      phase: "Phase 2",
+      unitAddress: "Blk 4 Lot 9, Narra St.",
+
       street: "Narra St.",
       block: "4",
       lot: "9",
@@ -366,8 +366,8 @@ async function main() {
       lastName: "Villanueva",
       email: "grace.villanueva@example.test",
       contactNumber: "09171000008",
-      unitAddress: "Blk 4 Lot 9, Narra St., Phase 2",
-      phase: "Phase 2",
+      unitAddress: "Blk 4 Lot 9, Narra St.",
+
       street: "Narra St.",
       block: "4",
       lot: "9",
@@ -440,7 +440,7 @@ async function main() {
       type: "GCASH" as const,
       accountName: "Asian Leaf HOA",
       accountNumber: "0917 000 0000",
-      qrImageUrl: null,
+      qrImageUrl: "/gcash-qr.png",
       instructions:
         "Open GCash, scan the HOA QR, and send the amount. Then submit the GCash reference number here.",
       sortOrder: 1,
@@ -606,7 +606,7 @@ async function main() {
     { id: "bud_002", type: "INCOME" as const, category: "Donations", description: "Landscaping fund donation", amount: 1000, dayOffset: -20 },
     { id: "bud_003", type: "EXPENSE" as const, category: "Security", description: "Guard services, first half of the month", amount: 12000, dayOffset: -18 },
     { id: "bud_004", type: "EXPENSE" as const, category: "Landscaping", description: "Plants and soil for the entrance", amount: 3500, dayOffset: -14 },
-    { id: "bud_005", type: "EXPENSE" as const, category: "Repairs", description: "Streetlight replacement, Phase 2", amount: 1800, dayOffset: -7 },
+    { id: "bud_005", type: "EXPENSE" as const, category: "Repairs", description: "Streetlight replacement, Narra St.", amount: 1800, dayOffset: -7 },
     { id: "bud_006", type: "EXPENSE" as const, category: "Utilities", description: "Common-area water bill", amount: 900, dayOffset: -3 },
   ];
 
@@ -690,7 +690,7 @@ async function main() {
       id: "fb_001",
       userId: "usr_ana",
       subject: "Parking markings",
-      message: "Please repaint the parking markings near Phase 2. It is hard to tell which slot is ours at night.",
+      message: "Please repaint the parking markings near Narra St. It is hard to tell which slot is ours at night.",
       status: "NEW" as const,
       adminNote: null,
     },
@@ -706,7 +706,7 @@ async function main() {
       id: "fb_003",
       userId: "usr_jose",
       subject: "Streetlights",
-      message: "Two streetlights near the Phase 2 corner were flickering last week.",
+      message: "Two streetlights near the Narra St. corner were flickering last week.",
       status: "RESOLVED" as const,
       adminNote: "Replaced the bulbs on the 18th. Closing this report.",
     },

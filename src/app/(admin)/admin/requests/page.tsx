@@ -14,13 +14,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input, Select } from "@/components/ui/form";
+import { Input } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
 import { formatDate } from "@/lib/dates";
 import { prisma } from "@/lib/db";
-import { PHASES, parseHouseholdLabel, STREETS } from "@/lib/locations";
+import { parseHouseholdLabel, STREETS } from "@/lib/locations";
 import { parseRegistrationPayload } from "@/lib/registration";
 
 export const metadata: Metadata = { title: "Register requests" };
@@ -87,7 +87,6 @@ export default async function AdminRequestsPage({
             const parsed = parseRegistrationPayload(request.payload);
             const legacy = parseHouseholdLabel(request.unitAddress);
             const unit = {
-              phase: request.phase ?? legacy?.phase ?? PHASES[0],
               street: request.street ?? legacy?.street ?? "",
               block: request.block ?? legacy?.block ?? "",
               lot: request.lot ?? legacy?.lot ?? "",
@@ -121,7 +120,6 @@ export default async function AdminRequestsPage({
                           label="Occupancy"
                           value={occupancyLabels[parsed.data.occupancyType]}
                         />
-                        <Detail label="Phase" value={unit.phase} />
                         <Detail
                           label="Street"
                           value={unit.street || "Not provided"}
@@ -203,17 +201,6 @@ export default async function AdminRequestsPage({
                           value={request.id}
                         />
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <Select
-                            label="Phase"
-                            name="phase"
-                            defaultValue={unit.phase}
-                          >
-                            {PHASES.map((phase) => (
-                              <option key={phase} value={phase}>
-                                {phase}
-                              </option>
-                            ))}
-                          </Select>
                           <Input
                             label="Street"
                             name="street"

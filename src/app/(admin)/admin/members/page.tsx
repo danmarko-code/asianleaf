@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { PHASES, STREETS } from "@/lib/locations";
+import { STREETS } from "@/lib/locations";
 
 export const metadata: Metadata = { title: "Members" };
 
@@ -34,7 +34,6 @@ export default async function AdminMembersPage({
   searchParams: Promise<{
     q?: string | string[];
     street?: string | string[];
-    phase?: string | string[];
     block?: string | string[];
     lot?: string | string[];
     occupancy?: string | string[];
@@ -46,7 +45,6 @@ export default async function AdminMembersPage({
 
   const q = firstValue(params.q).slice(0, 80);
   const street = firstValue(params.street).slice(0, 80);
-  const phase = firstValue(params.phase).slice(0, 40);
   const block = firstValue(params.block).slice(0, 10);
   const lot = firstValue(params.lot).slice(0, 10);
   const occupancy = firstValue(params.occupancy);
@@ -83,10 +81,6 @@ export default async function AdminMembersPage({
         ],
       },
     });
-  }
-
-  if (phase) {
-    filters.push({ household: { phase } });
   }
 
   if (block) {
@@ -140,7 +134,7 @@ export default async function AdminMembersPage({
   const householdCount = new Set(members.map((member) => member.householdId))
     .size;
   const hasFilters = Boolean(
-    q || street || phase || block || lot || occupancy || status,
+    q || street || block || lot || occupancy || status,
   );
 
   return (
@@ -148,18 +142,18 @@ export default async function AdminMembersPage({
       <PageHeader
         eyebrow="Records"
         title="Members"
-        description="Search household records by resident, contact details, street, phase or block."
+        description="Search household records by resident, contact details, street or block."
       />
 
       <Card>
         <CardBody>
           <form
-            key={[q, street, phase, block, lot, occupancy, status].join("|")}
+            key={[q, street, block, lot, occupancy, status].join("|")}
             method="get"
             action="/admin/members"
             className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12"
           >
-            <div className="sm:col-span-2 lg:col-span-3">
+            <div className="sm:col-span-2 lg:col-span-4">
               <Input
                 label="Search"
                 name="q"
@@ -168,20 +162,10 @@ export default async function AdminMembersPage({
                 placeholder="Name, email, contact or address"
               />
             </div>
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-4">
               <Select label="Street" name="street" defaultValue={street}>
                 <option value="">All streets</option>
                 {STREETS.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="lg:col-span-2">
-              <Select label="Phase" name="phase" defaultValue={phase}>
-                <option value="">All phases</option>
-                {PHASES.map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>
@@ -253,7 +237,7 @@ export default async function AdminMembersPage({
       {members.length === 0 ? (
         <EmptyState
           title="No matching members"
-          description="Try a different name, street, phase or block, or clear the filters to see every record."
+          description="Try a different name, street or block, or clear the filters to see every record."
           action={
             <Link
               href="/admin/members"

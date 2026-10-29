@@ -95,14 +95,12 @@ export async function updateHouseholdUnitAction(formData: FormData) {
 
   const parsed = z
     .object({
-      phase: z.string().trim().min(1).max(40),
       streetChoice: z.string().trim().min(1).max(80),
       customStreet: z.string().trim().max(80).optional(),
       block: z.string().trim().regex(HOUSE_NUMBER_PATTERN),
       lot: z.string().trim().regex(HOUSE_NUMBER_PATTERN),
     })
     .safeParse({
-      phase: formData.get("phase"),
       streetChoice: formData.get("streetChoice"),
       customStreet: formData.get("customStreet") || undefined,
       block: formData.get("block"),
@@ -113,7 +111,7 @@ export async function updateHouseholdUnitAction(formData: FormData) {
     back(
       memberId,
       "overview",
-      "Enter a valid phase, street, block and lot.",
+      "Enter a valid street, block and lot.",
       "error",
     );
   }
@@ -130,7 +128,6 @@ export async function updateHouseholdUnitAction(formData: FormData) {
   const block = parsed.data.block.toUpperCase();
   const lot = parsed.data.lot.toUpperCase();
   const unitAddress = composeUnitAddress({
-    phase: parsed.data.phase,
     street,
     block,
     lot,
@@ -147,7 +144,7 @@ export async function updateHouseholdUnitAction(formData: FormData) {
       id: { not: member.householdId },
       OR: [
         { unitAddress: { equals: unitAddress, mode: "insensitive" } },
-        { phase: parsed.data.phase, block, lot },
+        { block, lot },
       ],
     },
   });
@@ -165,7 +162,6 @@ export async function updateHouseholdUnitAction(formData: FormData) {
     where: { id: member.householdId },
     data: {
       unitAddress,
-      phase: parsed.data.phase,
       street,
       block,
       lot,
