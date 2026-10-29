@@ -34,21 +34,52 @@ async function main() {
 
   // ---------- Households ----------
   const households = [
-    { id: "hh_001", unitAddress: "12 Sampaguita St., Phase 1", block: "1", lot: "12" },
-    { id: "hh_002", unitAddress: "8 Ilang-Ilang St., Phase 1", block: "1", lot: "8" },
-    { id: "hh_003", unitAddress: "22 Narra St., Phase 2", block: "2", lot: "22" },
-    { id: "hh_004", unitAddress: "5 Acacia Lane, Phase 2", block: "2", lot: "5" },
-    { id: "hh_005", unitAddress: "31 Molave St., Phase 3", block: "3", lot: "31" },
+    {
+      id: "hh_001",
+      unitAddress: "Blk 1 Lot 12, Sampaguita St., Phase 1",
+      phase: "Phase 1",
+      street: "Sampaguita St.",
+      block: "1",
+      lot: "12",
+    },
+    {
+      id: "hh_002",
+      unitAddress: "Blk 1 Lot 8, Ilang-Ilang St., Phase 1",
+      phase: "Phase 1",
+      street: "Ilang-Ilang St.",
+      block: "1",
+      lot: "8",
+    },
+    {
+      id: "hh_003",
+      unitAddress: "Blk 2 Lot 22, Narra St., Phase 2",
+      phase: "Phase 2",
+      street: "Narra St.",
+      block: "2",
+      lot: "22",
+    },
+    {
+      id: "hh_004",
+      unitAddress: "Blk 2 Lot 5, Acacia Lane, Phase 2",
+      phase: "Phase 2",
+      street: "Acacia Lane",
+      block: "2",
+      lot: "5",
+    },
+    {
+      id: "hh_005",
+      unitAddress: "Blk 3 Lot 31, Molave St., Phase 3",
+      phase: "Phase 3",
+      street: "Molave St.",
+      block: "3",
+      lot: "31",
+    },
   ];
 
   for (const household of households) {
     await prisma.household.upsert({
       where: { id: household.id },
-      update: {
-        unitAddress: household.unitAddress,
-        block: household.block,
-        lot: household.lot,
-      },
+      update: household,
       create: household,
     });
   }
@@ -279,14 +310,25 @@ async function main() {
 
   await prisma.registrationRequest.upsert({
     where: { id: "req_001" },
-    update: { payload: carloPayload },
+    update: {
+      payload: carloPayload,
+      unitAddress: "Blk 2 Lot 14, Sampaguita St., Phase 1",
+      phase: "Phase 1",
+      street: "Sampaguita St.",
+      block: "2",
+      lot: "14",
+    },
     create: {
       id: "req_001",
       firstName: "Carlo",
       lastName: "Mendoza",
       email: "carlo.mendoza@example.test",
       contactNumber: "09171000007",
-      unitAddress: "14 Sampaguita St., Phase 1",
+      unitAddress: "Blk 2 Lot 14, Sampaguita St., Phase 1",
+      phase: "Phase 1",
+      street: "Sampaguita St.",
+      block: "2",
+      lot: "14",
       passwordHash: hashSync("Carlo2026", 12),
       consentVersion: CONSENT_VERSION,
       consentAt: monthDate(0, 20),
@@ -310,14 +352,25 @@ async function main() {
 
   await prisma.registrationRequest.upsert({
     where: { id: "req_002" },
-    update: { payload: gracePayload },
+    update: {
+      payload: gracePayload,
+      unitAddress: "Blk 4 Lot 9, Narra St., Phase 2",
+      phase: "Phase 2",
+      street: "Narra St.",
+      block: "4",
+      lot: "9",
+    },
     create: {
       id: "req_002",
       firstName: "Grace",
       lastName: "Villanueva",
       email: "grace.villanueva@example.test",
       contactNumber: "09171000008",
-      unitAddress: "9 Narra St., Phase 2",
+      unitAddress: "Blk 4 Lot 9, Narra St., Phase 2",
+      phase: "Phase 2",
+      street: "Narra St.",
+      block: "4",
+      lot: "9",
       passwordHash: hashSync("Grace2026", 12),
       consentVersion: CONSENT_VERSION,
       consentAt: monthDate(0, 24),

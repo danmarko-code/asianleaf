@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import { dateFromInput } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 
@@ -71,7 +72,7 @@ export async function createViolationAction(formData: FormData) {
     }
   }
 
-  await prisma.violation.create({
+  const violation = await prisma.violation.create({
     data: {
       householdId: household.id,
       memberId: member?.id ?? null,
@@ -92,6 +93,14 @@ export async function createViolationAction(formData: FormData) {
     },
   });
 
+  await logAudit({
+    actorUserId: user.id,
+    action: "VIOLATION_ISSUED",
+    entityType: "Violation",
+    entityId: violation.id,
+    metadata: { householdId: household.id, kind: violation.kind },
+  });
+
   refreshViolationViews();
   redirect(
     `/admin/violations?notice=${encodeURIComponent("Violation issued to the resident.")}`,
@@ -99,7 +108,7 @@ export async function createViolationAction(formData: FormData) {
 }
 
 export async function updateViolationStatusAction(formData: FormData) {
-  await requireRole("ADMIN");
+  const user = await requireRole("ADMIN");
   const id = z.string().min(1).safeParse(formData.get("violationId"));
   const status = z
     .enum(["RESOLVED", "DISMISSED"])
@@ -107,12 +116,20 @@ export async function updateViolationStatusAction(formData: FormData) {
 
   if (!id.success || !status.success) fail("Choose a valid violation.");
 
-  await prisma.violation.update({
+  const violation = await prisma.violation.update({
     where: { id: id.data },
     data: {
       status: status.data,
       resolvedAt: new Date(),
     },
+  });
+
+  await logAudit({
+    actorUserId: user.id,
+    action:
+      status.data === "RESOLVED" ? "VIOLATION_RESOLVED" : "VIOLATION_DISMISSED",
+    entityType: "Violation",
+    entityId: violation.id,
   });
 
   refreshViolationViews();

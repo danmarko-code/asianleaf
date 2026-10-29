@@ -18,6 +18,11 @@ import {
   Select,
 } from "@/components/ui/form";
 import { CheckIcon } from "@/components/icons";
+import {
+  composeUnitAddress,
+  OTHER_STREET,
+  STREETS,
+} from "@/lib/locations";
 
 type Person = { fullName: string; relationship: string };
 type Pet = { name: string; breed: string };
@@ -33,6 +38,13 @@ export function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const [unit, setUnit] = useState({
+    street: STREETS[0] as string,
+    customStreet: "",
+    block: "",
+    lot: "",
+  });
+
   const [householdMembers, setHouseholdMembers] = useState<Person[]>([]);
   const [pets, setPets] = useState<Pet[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -47,6 +59,17 @@ export function RegisterForm() {
     { label: "At least one number", met: /\d/.test(password) },
   ];
   const passwordMeetsRequirements = passwordChecks.every((check) => check.met);
+
+  const previewStreet =
+    unit.street === OTHER_STREET ? unit.customStreet.trim() : unit.street;
+  const addressPreview =
+    previewStreet && unit.block.trim() && unit.lot.trim()
+      ? composeUnitAddress({
+          street: previewStreet,
+          block: unit.block,
+          lot: unit.lot,
+        })
+      : "";
 
   const payload = JSON.stringify({
     householdMembers: householdMembers
@@ -247,15 +270,85 @@ export function RegisterForm() {
               />
             </div>
 
-            <Input
-              label="Unit address"
-              name="unitAddress"
-              data-step="1"
-              required
-              minLength={5}
-              maxLength={200}
-              placeholder="12 Sampaguita St., Phase 1"
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select
+                label="Street"
+                name="street"
+                data-step="1"
+                required
+                value={unit.street}
+                onChange={(event) =>
+                  setUnit((current) => ({ ...current, street: event.target.value }))
+                }
+              >
+                {STREETS.map((street) => (
+                  <option key={street} value={street}>
+                    {street}
+                  </option>
+                ))}
+                <option value={OTHER_STREET}>Other street</option>
+              </Select>
+
+              {unit.street === OTHER_STREET ? (
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Street name"
+                    name="customStreet"
+                    data-step="1"
+                    required
+                    minLength={2}
+                    maxLength={80}
+                    value={unit.customStreet}
+                    onChange={(event) =>
+                      setUnit((current) => ({
+                        ...current,
+                        customStreet: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. Mabini St."
+                  />
+                </div>
+              ) : (
+                <input type="hidden" name="customStreet" value="" />
+              )}
+
+              <Input
+                label="Block"
+                name="block"
+                data-step="1"
+                required
+                pattern="[A-Za-z0-9-]{1,10}"
+                maxLength={10}
+                value={unit.block}
+                onChange={(event) =>
+                  setUnit((current) => ({ ...current, block: event.target.value }))
+                }
+                placeholder="2"
+              />
+
+              <Input
+                label="Lot"
+                name="lot"
+                data-step="1"
+                required
+                pattern="[A-Za-z0-9-]{1,10}"
+                maxLength={10}
+                value={unit.lot}
+                onChange={(event) =>
+                  setUnit((current) => ({ ...current, lot: event.target.value }))
+                }
+                placeholder="14"
+              />
+            </div>
+
+            <div className="rounded-md border border-dashed border-line bg-cream px-4 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                Unit address
+              </p>
+              <p className="mt-1 text-sm text-ink">
+                {addressPreview || "Choose a street, then enter block and lot."}
+              </p>
+            </div>
 
             <div className="sm:max-w-xs">
               <Select

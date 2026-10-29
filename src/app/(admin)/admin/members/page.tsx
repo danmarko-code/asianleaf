@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { PHASES, STREETS } from "@/lib/locations";
 
 export const metadata: Metadata = { title: "Members" };
 
@@ -33,7 +34,9 @@ export default async function AdminMembersPage({
   searchParams: Promise<{
     q?: string | string[];
     street?: string | string[];
+    phase?: string | string[];
     block?: string | string[];
+    lot?: string | string[];
     occupancy?: string | string[];
     status?: string | string[];
   }>;
@@ -43,7 +46,9 @@ export default async function AdminMembersPage({
 
   const q = firstValue(params.q).slice(0, 80);
   const street = firstValue(params.street).slice(0, 80);
-  const block = firstValue(params.block).slice(0, 20);
+  const phase = firstValue(params.phase).slice(0, 40);
+  const block = firstValue(params.block).slice(0, 10);
+  const lot = firstValue(params.lot).slice(0, 10);
   const occupancy = firstValue(params.occupancy);
   const status = firstValue(params.status);
 
@@ -68,14 +73,31 @@ export default async function AdminMembersPage({
   if (street) {
     filters.push({
       household: {
-        unitAddress: { contains: street, mode: "insensitive" },
+        OR: [
+          { street: { equals: street, mode: "insensitive" } },
+          // Legacy households have no street column yet.
+          {
+            street: null,
+            unitAddress: { contains: street, mode: "insensitive" },
+          },
+        ],
       },
     });
   }
 
+  if (phase) {
+    filters.push({ household: { phase } });
+  }
+
   if (block) {
     filters.push({
-      household: { block: { contains: block, mode: "insensitive" } },
+      household: { block: { equals: block, mode: "insensitive" } },
+    });
+  }
+
+  if (lot) {
+    filters.push({
+      household: { lot: { equals: lot, mode: "insensitive" } },
     });
   }
 
@@ -117,7 +139,9 @@ export default async function AdminMembersPage({
 
   const householdCount = new Set(members.map((member) => member.householdId))
     .size;
-  const hasFilters = Boolean(q || street || block || occupancy || status);
+  const hasFilters = Boolean(
+    q || street || phase || block || lot || occupancy || status,
+  );
 
   return (
     <div className="space-y-6">
@@ -130,12 +154,12 @@ export default async function AdminMembersPage({
       <Card>
         <CardBody>
           <form
-            key={[q, street, block, occupancy, status].join("|")}
+            key={[q, street, phase, block, lot, occupancy, status].join("|")}
             method="get"
             action="/admin/members"
             className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12"
           >
-            <div className="sm:col-span-2 lg:col-span-4">
+            <div className="sm:col-span-2 lg:col-span-3">
               <Input
                 label="Search"
                 name="q"
@@ -145,12 +169,24 @@ export default async function AdminMembersPage({
               />
             </div>
             <div className="lg:col-span-3">
-              <Input
-                label="Street or phase"
-                name="street"
-                defaultValue={street}
-                placeholder="Sampaguita, Phase 1"
-              />
+              <Select label="Street" name="street" defaultValue={street}>
+                <option value="">All streets</option>
+                {STREETS.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="lg:col-span-2">
+              <Select label="Phase" name="phase" defaultValue={phase}>
+                <option value="">All phases</option>
+                {PHASES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </Select>
             </div>
             <div className="lg:col-span-1">
               <Input
@@ -158,9 +194,19 @@ export default async function AdminMembersPage({
                 name="block"
                 defaultValue={block}
                 placeholder="1"
+                maxLength={10}
               />
             </div>
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-1">
+              <Input
+                label="Lot"
+                name="lot"
+                defaultValue={lot}
+                placeholder="12"
+                maxLength={10}
+              />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-2">
               <Select
                 label="Occupancy"
                 name="occupancy"
@@ -171,7 +217,7 @@ export default async function AdminMembersPage({
                 <option value="TENANT">Tenant</option>
               </Select>
             </div>
-            <div className="lg:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-2">
               <Select label="Status" name="status" defaultValue={status}>
                 <option value="">All statuses</option>
                 <option value="ACTIVE">Active</option>
@@ -243,9 +289,12 @@ export default async function AdminMembersPage({
                     return (
                       <tr key={member.id}>
                         <Td>
-                          <p className="font-medium text-ink">
+                          <Link
+                            href={`/admin/members/${member.id}`}
+                            className="font-medium text-forest underline-offset-4 hover:underline"
+                          >
                             {member.firstName} {member.lastName}
-                          </p>
+                          </Link>
                           <p className="mt-0.5 text-xs text-muted">
                             {member.email}
                           </p>

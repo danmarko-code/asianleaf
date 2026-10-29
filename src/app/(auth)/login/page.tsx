@@ -53,6 +53,15 @@ export default async function LoginPage({
           </Button>
         </form>
 
+        <p className="mt-3 text-sm text-muted">
+          <Link
+            href="/forgot-password"
+            className="text-forest underline underline-offset-4"
+          >
+            Forgot your password?
+          </Link>
+        </p>
+
         <p className="mt-4 text-xs text-muted">
           Only confirmed accounts can sign in. Pending registrations must be
           approved by an administrator first.

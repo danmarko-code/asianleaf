@@ -156,6 +156,7 @@ model Session {
 model Household {
   id          String      @id @default(cuid())
   unitAddress String      @unique
+  street      String?
   block       String?
   lot         String?
   members     Member[]
@@ -164,6 +165,12 @@ model Household {
   violations  Violation[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  // Block and lot identify the unit. Legacy rows may have null parts, and
+  // PostgreSQL allows multiple nulls, so they do not collide.
+  @@unique([block, lot])
+  @@index([street])
+  @@index([block, lot])
 }
 
 model Member {
@@ -249,6 +256,9 @@ model RegistrationRequest {
   email           String
   contactNumber   String
   unitAddress     String
+  street          String?
+  block           String?
+  lot             String?
   payload         Json
   passwordHash    String?
   consentVersion  String

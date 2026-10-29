@@ -14,12 +14,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/form";
+import { Input, Select } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
 import { formatDate } from "@/lib/dates";
 import { prisma } from "@/lib/db";
+import { PHASES, parseHouseholdLabel, STREETS } from "@/lib/locations";
 import { parseRegistrationPayload } from "@/lib/registration";
 
 export const metadata: Metadata = { title: "Register requests" };
@@ -84,6 +85,13 @@ export default async function AdminRequestsPage({
         <div className="space-y-5">
           {pending.map((request) => {
             const parsed = parseRegistrationPayload(request.payload);
+            const legacy = parseHouseholdLabel(request.unitAddress);
+            const unit = {
+              phase: request.phase ?? legacy?.phase ?? PHASES[0],
+              street: request.street ?? legacy?.street ?? "",
+              block: request.block ?? legacy?.block ?? "",
+              lot: request.lot ?? legacy?.lot ?? "",
+            };
 
             return (
               <Card key={request.id}>
@@ -112,6 +120,19 @@ export default async function AdminRequestsPage({
                         <Detail
                           label="Occupancy"
                           value={occupancyLabels[parsed.data.occupancyType]}
+                        />
+                        <Detail label="Phase" value={unit.phase} />
+                        <Detail
+                          label="Street"
+                          value={unit.street || "Not provided"}
+                        />
+                        <Detail
+                          label="Block / Lot"
+                          value={
+                            unit.block || unit.lot
+                              ? `Block ${unit.block || "?"} · Lot ${unit.lot || "?"}`
+                              : "Not provided"
+                          }
                         />
                       </div>
 
@@ -168,15 +189,63 @@ export default async function AdminRequestsPage({
                         Approve and create login
                       </p>
                       <p className="mt-1 text-xs text-muted">
-                        The email and password submitted by the applicant become
-                        the household login.
+                        Check the unit details, correct them if needed, then
+                        approve. The applicant&apos;s email and password become the
+                        household login.
                       </p>
-                      <form action={approveRegistrationAction} className="mt-3">
+                      <form
+                        action={approveRegistrationAction}
+                        className="mt-3 space-y-3"
+                      >
                         <input
                           type="hidden"
                           name="requestId"
                           value={request.id}
                         />
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <Select
+                            label="Phase"
+                            name="phase"
+                            defaultValue={unit.phase}
+                          >
+                            {PHASES.map((phase) => (
+                              <option key={phase} value={phase}>
+                                {phase}
+                              </option>
+                            ))}
+                          </Select>
+                          <Input
+                            label="Street"
+                            name="street"
+                            defaultValue={unit.street}
+                            list={`streets-${request.id}`}
+                            required
+                            minLength={2}
+                            maxLength={80}
+                            hint={`Known: ${STREETS.join(", ")}`}
+                          />
+                          <datalist id={`streets-${request.id}`}>
+                            {STREETS.map((street) => (
+                              <option key={street} value={street} />
+                            ))}
+                          </datalist>
+                          <Input
+                            label="Block"
+                            name="block"
+                            defaultValue={unit.block}
+                            required
+                            pattern="[A-Za-z0-9-]{1,10}"
+                            maxLength={10}
+                          />
+                          <Input
+                            label="Lot"
+                            name="lot"
+                            defaultValue={unit.lot}
+                            required
+                            pattern="[A-Za-z0-9-]{1,10}"
+                            maxLength={10}
+                          />
+                        </div>
                         <Button type="submit" size="sm">
                           Approve registration
                         </Button>

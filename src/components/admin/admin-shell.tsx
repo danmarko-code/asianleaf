@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { LeafMark } from "@/components/brand/leaf-mark";
 import {
   AlertIcon,
+  BellIcon,
   ChartIcon,
   ChevronLeftIcon,
   CloseIcon,
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/admin/requests", label: "Register requests", icon: InboxIcon },
   { href: "/admin/violations", label: "Violations", icon: AlertIcon },
   { href: "/admin/feedback", label: "Feedback", icon: MessageIcon },
+  { href: "/admin/audit", label: "Audit log", icon: BellIcon },
 ];
 
 function SidebarContent({

@@ -5,12 +5,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
+import { composeUnitAddress, HOUSE_NUMBER_PATTERN } from "@/lib/locations";
 import { parseRegistrationPayload } from "@/lib/registration";
 
 const requestIdSchema = z.object({ requestId: z.string().min(1) });
 const rejectionSchema = requestIdSchema.extend({
   reason: z.string().trim().min(3).max(300),
+});
+const unitSchema = z.object({
+  street: z.string().trim().min(2).max(80),
+  block: z.string().trim().regex(HOUSE_NUMBER_PATTERN),
+  lot: z.string().trim().regex(HOUSE_NUMBER_PATTERN),
 });
 
 function fail(message: string): never {
@@ -51,11 +58,39 @@ export async function approveRegistrationAction(formData: FormData) {
     );
   }
 
+  // The admin can correct the unit while approving; otherwise the values the
+  // applicant submitted are used.
+  const submittedUnit = unitSchema.safeParse({
+    street: formData.get("street") || request.street,
+    block: formData.get("block") || request.block,
+    lot: formData.get("lot") || request.lot,
+  });
+
+  if (!submittedUnit.success) {
+    fail(
+      "Set the street, block and lot before approving. Block and lot may only contain letters, numbers and dashes.",
+    );
+  }
+
+  const block = submittedUnit.data.block.toUpperCase();
+  const lot = submittedUnit.data.lot.toUpperCase();
+  const unitAddress = composeUnitAddress({
+    street: submittedUnit.data.street,
+    block,
+    lot,
+  });
+
   const [existingAccount, existingHousehold] = await Promise.all([
     prisma.user.findUnique({ where: { email: request.email } }),
     prisma.household.findFirst({
       where: {
-        unitAddress: { equals: request.unitAddress, mode: "insensitive" },
+        OR: [
+          { unitAddress: { equals: unitAddress, mode: "insensitive" } },
+          {
+            block,
+            lot,
+          },
+        ],
       },
     }),
   ]);
@@ -65,14 +100,17 @@ export async function approveRegistrationAction(formData: FormData) {
   }
 
   if (existingHousehold) {
-    fail("A household with this unit address already exists.");
+    fail("A household with this unit already exists.");
   }
 
   try {
     await prisma.$transaction(async (tx) => {
       const household = await tx.household.create({
         data: {
-          unitAddress: request.unitAddress,
+          unitAddress,
+          street: submittedUnit.data.street,
+          block,
+          lot,
         },
       });
 
@@ -144,6 +182,10 @@ export async function approveRegistrationAction(formData: FormData) {
         where: { id: request.id },
         data: {
           status: "APPROVED",
+          unitAddress,
+          street: submittedUnit.data.street,
+          block,
+          lot,
           reviewedById: admin.id,
           reviewedAt: new Date(),
           createdUserId: account.id,
@@ -162,18 +204,31 @@ export async function approveRegistrationAction(formData: FormData) {
       });
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      fail(
-        "This email or unit address is already in use. Refresh the queue and try again.",
-      );
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        fail(
+          "This email or unit is already in use. Refresh the queue and try again.",
+        );
+      }
+
+      if (error.code === "P2021" || error.code === "P2022") {
+        console.error("Registration approval schema mismatch:", error.message);
+        fail(
+          "The database schema is out of date. Run `npx prisma db push` and restart the server, then try again.",
+        );
+      }
     }
     throw error;
   }
 
   refreshRegistrationViews();
+  await logAudit({
+    actorUserId: admin.id,
+    action: "REGISTRATION_APPROVED",
+    entityType: "RegistrationRequest",
+    entityId: request.id,
+    metadata: { unitAddress, email: request.email },
+  });
   redirect(
     `/admin/requests?notice=${encodeURIComponent(
       "Registration approved. The household login is now active.",
@@ -212,6 +267,13 @@ export async function rejectRegistrationAction(formData: FormData) {
   });
 
   refreshRegistrationViews();
+  await logAudit({
+    actorUserId: admin.id,
+    action: "REGISTRATION_REJECTED",
+    entityType: "RegistrationRequest",
+    entityId: request.id,
+    metadata: { reason: parsed.data.reason },
+  });
   redirect(
     `/admin/requests?notice=${encodeURIComponent(
       "Registration rejected. The applicant can submit a corrected request.",

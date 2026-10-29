@@ -29,7 +29,12 @@ const links = [
   {
     href: "/app/change-password",
     title: "Change password",
-    description: "Confirm the change with a one-time code sent by SMS or email.",
+    description: "Confirm the change with a one-time code sent to your email.",
+  },
+  {
+    href: "/app/budget",
+    title: "Transparency report",
+    description: "See the association income and expenses posted by the treasurer.",
   },
   {
     href: "/app/feedback",
@@ -60,7 +65,7 @@ export default async function HomeownerDashboardPage() {
     );
   }
 
-  const [due, openViolations] = await Promise.all([
+  const [due, openViolations, notifications] = await Promise.all([
     prisma.due.findFirst({
       where: {
         householdId,
@@ -77,6 +82,11 @@ export default async function HomeownerDashboardPage() {
     prisma.violation.findMany({
       where: { householdId, status: "OPEN" },
       orderBy: { issuedAt: "desc" },
+    }),
+    prisma.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
     }),
   ]);
 
@@ -192,6 +202,38 @@ export default async function HomeownerDashboardPage() {
             Review all
           </Link>
         </p>
+      ) : null}
+
+      {notifications.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notifications</CardTitle>
+            <CardDescription>
+              Dues reminders and updates from the association.
+            </CardDescription>
+          </CardHeader>
+          <CardBody className="space-y-3">
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className="rounded-md border border-line px-4 py-3"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="text-sm font-medium text-ink">
+                    {notification.title}
+                  </p>
+                  {notification.readAt ? null : (
+                    <Badge tone="warning">New</Badge>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted">{notification.body}</p>
+                <p className="mt-1 text-[11px] text-muted">
+                  {formatDate(notification.createdAt)}
+                </p>
+              </div>
+            ))}
+          </CardBody>
+        </Card>
       ) : null}
 
       <Card className="divide-y divide-line">

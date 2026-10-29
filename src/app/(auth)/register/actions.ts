@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import {
   CONTACT_NUMBER_PATTERN,
   registrationPayloadSchema,
+  unitDetailsSchema,
 } from "@/lib/registration";
 
 const registrationSchema = z.object({
@@ -26,7 +27,10 @@ const registrationSchema = z.object({
     .regex(/[A-Z]/)
     .regex(/\d/),
   confirmPassword: z.string().min(8).max(72),
-  unitAddress: z.string().trim().min(5).max(200),
+  street: z.string().trim().min(1).max(80),
+  customStreet: z.string().trim().max(80).optional(),
+  block: z.string().trim().min(1).max(10),
+  lot: z.string().trim().min(1).max(10),
   occupancyType: z.enum(["OWNER_OCCUPIED", "TENANT"]),
   consent: z.string().optional(),
   payload: z.string().max(30000),
@@ -52,7 +56,10 @@ export async function registerAction(
     contactNumber: formData.get("contactNumber"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
-    unitAddress: formData.get("unitAddress"),
+    street: formData.get("street"),
+    customStreet: formData.get("customStreet") || undefined,
+    block: formData.get("block"),
+    lot: formData.get("lot"),
     occupancyType: formData.get("occupancyType"),
     consent: formData.get("consent"),
     payload: formData.get("payload"),
@@ -61,7 +68,22 @@ export async function registerAction(
   if (!parsed.success) {
     return {
       error:
-        "Check the required fields. Use an 11-digit contact number and a password with at least 8 characters, upper and lowercase letters, and a number.",
+        "Check the required fields. Choose a street, enter a block and lot, use an 11-digit contact number and a password with at least 8 characters, upper and lowercase letters, and a number.",
+      step: 1,
+    };
+  }
+
+  const unit = unitDetailsSchema.safeParse({
+    street: parsed.data.street,
+    customStreet: parsed.data.customStreet,
+    block: parsed.data.block,
+    lot: parsed.data.lot,
+  });
+
+  if (!unit.success) {
+    return {
+      error:
+        "Check the unit details. Choose a street, then enter a block and lot using letters or numbers only.",
       step: 1,
     };
   }
@@ -105,10 +127,18 @@ export async function registerAction(
     prisma.user.findUnique({ where: { email: parsed.data.email } }),
     prisma.household.findFirst({
       where: {
-        unitAddress: {
-          equals: parsed.data.unitAddress,
-          mode: "insensitive",
-        },
+        OR: [
+          {
+            unitAddress: {
+              equals: unit.data.unitAddress,
+              mode: "insensitive",
+            },
+          },
+          {
+            block: unit.data.block,
+            lot: unit.data.lot,
+          },
+        ],
       },
     }),
     prisma.registrationRequest.findFirst({
@@ -118,9 +148,13 @@ export async function registerAction(
           { email: parsed.data.email },
           {
             unitAddress: {
-              equals: parsed.data.unitAddress,
+              equals: unit.data.unitAddress,
               mode: "insensitive",
             },
+          },
+          {
+            block: unit.data.block,
+            lot: unit.data.lot,
           },
         ],
       },
@@ -171,7 +205,10 @@ export async function registerAction(
       lastName: parsed.data.lastName,
       email: parsed.data.email,
       contactNumber: parsed.data.contactNumber,
-      unitAddress: parsed.data.unitAddress,
+      unitAddress: unit.data.unitAddress,
+      street: unit.data.street,
+      block: unit.data.block,
+      lot: unit.data.lot,
       payload: payload.data,
       passwordHash,
       consentVersion: CONSENT_VERSION,

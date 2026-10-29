@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
-import { Card, CardBody } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ChangePasswordForm } from "@/app/(homeowner)/app/change-password/change-password-form";
+import {
+  Card,
+  CardBody,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { requireRole } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Change password" };
 
-export default function HomeownerChangePasswordPage() {
+export default async function HomeownerChangePasswordPage() {
+  await requireRole("HOMEOWNER");
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -15,12 +24,14 @@ export default function HomeownerChangePasswordPage() {
       />
 
       <Card>
+        <CardHeader>
+          <CardTitle>Update your password</CardTitle>
+          <CardDescription>
+            Codes expire after 5 minutes and allow five attempts.
+          </CardDescription>
+        </CardHeader>
         <CardBody>
-          <EmptyState
-            title="Password change is not connected yet"
-            description="Phase 6 adds SMS or email OTP confirmation, a 5-minute expiry and a limited number of attempts."
-            className="border-0 bg-transparent px-0 py-6 shadow-none"
-          />
+          <ChangePasswordForm />
         </CardBody>
       </Card>
     </div>

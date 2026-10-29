@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
+import { formatPeso } from "@/lib/money";
 
 const idSchema = z.string().min(1);
 
@@ -28,7 +30,13 @@ export async function approvePaymentAction(formData: FormData) {
 
   const payment = await prisma.payment.findUnique({
     where: { id: parsed.data },
-    include: { due: true },
+    include: {
+      due: {
+        include: {
+          household: { include: { account: { select: { id: true } } } },
+        },
+      },
+    },
   });
 
   if (!payment) back("Payment not found.");
@@ -65,6 +73,26 @@ export async function approvePaymentAction(formData: FormData) {
         status: total >= Number(payment.due.amount) ? "PAID" : "PARTIALLY_PAID",
       },
     });
+
+    if (payment.due.household.account) {
+      await tx.notification.create({
+        data: {
+          userId: payment.due.household.account.id,
+          type: "PAYMENT_RECEIVED",
+          title: "Payment approved",
+          body: `We verified ${formatPeso(Number(payment.amount))}. Receipt ${receiptNumber}.`,
+          link: "/app/payments",
+        },
+      });
+    }
+  });
+
+  await logAudit({
+    actorUserId: user.id,
+    action: "PAYMENT_APPROVED",
+    entityType: "Payment",
+    entityId: payment.id,
+    metadata: { receiptNumber, amount: Number(payment.amount) },
   });
 
   refreshPaymentViews();
@@ -86,6 +114,13 @@ export async function rejectPaymentAction(formData: FormData) {
 
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId.data },
+    include: {
+      due: {
+        include: {
+          household: { include: { account: { select: { id: true } } } },
+        },
+      },
+    },
   });
 
   if (!payment) back("Payment not found.");
@@ -101,6 +136,26 @@ export async function rejectPaymentAction(formData: FormData) {
       reviewedById: user.id,
       reviewedAt: new Date(),
     },
+  });
+
+  if (payment.due.household.account) {
+    await prisma.notification.create({
+      data: {
+        userId: payment.due.household.account.id,
+        type: "GENERAL",
+        title: "Payment not verified",
+        body: reason.data,
+        link: "/app/payments",
+      },
+    });
+  }
+
+  await logAudit({
+    actorUserId: user.id,
+    action: "PAYMENT_REJECTED",
+    entityType: "Payment",
+    entityId: payment.id,
+    metadata: { reason: reason.data },
   });
 
   refreshPaymentViews();
