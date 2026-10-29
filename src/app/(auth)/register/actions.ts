@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { CONSENT_VERSION } from "@/lib/constants";
 import { prisma } from "@/lib/db";
-import { registrationPayloadSchema } from "@/lib/registration";
+import {
+  CONTACT_NUMBER_PATTERN,
+  registrationPayloadSchema,
+} from "@/lib/registration";
 
 const registrationSchema = z.object({
   firstName: z.string().trim().min(2).max(60),
@@ -14,19 +17,17 @@ const registrationSchema = z.object({
   contactNumber: z
     .string()
     .trim()
-    .min(7)
-    .max(30)
-    .regex(/^[+0-9()\s.-]+$/, "Enter a valid contact number."),
-  password: z.string().min(8).max(72),
+    .regex(CONTACT_NUMBER_PATTERN, "Enter an 11-digit contact number."),
+  password: z
+    .string()
+    .min(8)
+    .max(72)
+    .regex(/[a-z]/)
+    .regex(/[A-Z]/)
+    .regex(/\d/),
   confirmPassword: z.string().min(8).max(72),
   unitAddress: z.string().trim().min(5).max(200),
-  occupancyType: z.enum([
-    "OWNER_OCCUPIED",
-    "OWNER_NON_OCCUPIED",
-    "TENANT",
-  ]),
-  block: z.string().trim().max(20).optional(),
-  lot: z.string().trim().max(20).optional(),
+  occupancyType: z.enum(["OWNER_OCCUPIED", "TENANT"]),
   consent: z.string().optional(),
   payload: z.string().max(30000),
 });
@@ -53,8 +54,6 @@ export async function registerAction(
     confirmPassword: formData.get("confirmPassword"),
     unitAddress: formData.get("unitAddress"),
     occupancyType: formData.get("occupancyType"),
-    block: formData.get("block") || undefined,
-    lot: formData.get("lot") || undefined,
     consent: formData.get("consent"),
     payload: formData.get("payload"),
   });
@@ -62,7 +61,7 @@ export async function registerAction(
   if (!parsed.success) {
     return {
       error:
-        "Check the required fields. Use at least 8 characters for the password and enter a valid contact number.",
+        "Check the required fields. Use an 11-digit contact number and a password with at least 8 characters, upper and lowercase letters, and a number.",
       step: 1,
     };
   }
@@ -96,8 +95,6 @@ export async function registerAction(
   const payload = registrationPayloadSchema.safeParse({
     ...extras,
     occupancyType: parsed.data.occupancyType,
-    block: parsed.data.block,
-    lot: parsed.data.lot,
   });
 
   if (!payload.success) {

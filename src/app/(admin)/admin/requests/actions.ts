@@ -73,8 +73,6 @@ export async function approveRegistrationAction(formData: FormData) {
       const household = await tx.household.create({
         data: {
           unitAddress: request.unitAddress,
-          block: payload.data.block || null,
-          lot: payload.data.lot || null,
         },
       });
 
@@ -119,7 +117,6 @@ export async function approveRegistrationAction(formData: FormData) {
             memberId: member.id,
             name: pet.name,
             breed: pet.breed || "Not specified",
-            count: pet.count,
           })),
         });
       }
@@ -129,7 +126,6 @@ export async function approveRegistrationAction(formData: FormData) {
           data: payload.data.vehicles.map((vehicle) => ({
             memberId: member.id,
             plateNumber: vehicle.plateNumber,
-            count: vehicle.count,
           })),
         });
       }
@@ -139,6 +135,7 @@ export async function approveRegistrationAction(formData: FormData) {
           data: payload.data.kasambahay.map((person) => ({
             memberId: member.id,
             fullName: person.fullName,
+            contactNumber: person.contactNumber || null,
           })),
         });
       }

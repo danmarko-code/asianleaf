@@ -19,10 +19,9 @@ enum UserStatus {
   DISABLED
 }
 
-// Owner-occupied, owner but living elsewhere, or renting the unit.
+// Owner or tenant of the unit.
 enum OccupancyType {
   OWNER_OCCUPIED
-  OWNER_NON_OCCUPIED
   TENANT
 }
 
@@ -195,11 +194,12 @@ model Member {
 }
 
 model Kasambahay {
-  id        String   @id @default(cuid())
-  memberId  String
-  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  fullName  String
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  memberId      String
+  member        Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  fullName      String
+  contactNumber String?
+  createdAt     DateTime @default(now())
 
   @@index([memberId])
 }

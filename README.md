@@ -112,12 +112,13 @@ a session cookie, then the server layouts verify the session, expiry and
 
 ## Registration flow
 
-1. The applicant completes Step 1 with their name, email, contact number,
-   password, unit address, block/lot and occupancy type.
-2. Step 2 records other household members, kasambahay, pets, vehicles and the
-   Data Privacy Act consent.
-3. The password is hashed immediately and the request is stored as `PENDING`.
-   No login is created yet.
+1. The applicant completes Step 1 with their name, email, 11-digit contact
+   number, password, unit address and occupancy type (owner or tenant).
+2. Step 2 records other household members and their relationship, kasambahay
+   with contact numbers, pets, vehicles and the Data Privacy Act consent.
+3. Passwords need at least 8 characters with upper and lowercase letters and a
+   number. The password is hashed immediately and the request is stored as
+   `PENDING`. No login is created yet.
 4. An administrator reviews the queue at `/admin/requests`, including the unit,
    household details and consent record.
 5. Approval creates the household, primary member, dependents, pets, vehicles,
@@ -186,7 +187,7 @@ household means every household member using the account sees the same notices.
    request without creating a login.
 8. A duplicate email, unit address or pending household request is rejected.
 9. `/admin/requests` shows the unit, household members, pets, vehicles,
-   kasambahay, occupancy and consent details.
+   kasambahay contact numbers, occupancy and consent details.
 10. Rejecting a request stores the reason; approving it creates the household,
     records, login and in-app approval notice in one transaction.
 11. The approved applicant can sign in and sees the household dashboard; the

@@ -60,7 +60,7 @@ async function main() {
       householdId: "hh_001",
       firstName: "Maria",
       lastName: "Santos",
-      contactNumber: "+639171000001",
+      contactNumber: "09171000001",
       email: "maria.santos@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
     },
@@ -69,7 +69,7 @@ async function main() {
       householdId: "hh_001",
       firstName: "Liza",
       lastName: "Santos",
-      contactNumber: "+639171000002",
+      contactNumber: "09171000002",
       email: "liza.santos@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
     },
@@ -78,16 +78,16 @@ async function main() {
       householdId: "hh_002",
       firstName: "Jose",
       lastName: "Reyes",
-      contactNumber: "+639171000003",
+      contactNumber: "09171000003",
       email: "jose.reyes@example.test",
-      occupancyType: "OWNER_NON_OCCUPIED" as const,
+      occupancyType: "OWNER_OCCUPIED" as const,
     },
     {
       id: "mem_ana",
       householdId: "hh_003",
       firstName: "Ana",
       lastName: "Dela Cruz",
-      contactNumber: "+639171000004",
+      contactNumber: "09171000004",
       email: "ana.delacruz@example.test",
       occupancyType: "TENANT" as const,
     },
@@ -96,7 +96,7 @@ async function main() {
       householdId: "hh_004",
       firstName: "Pedro",
       lastName: "Lim",
-      contactNumber: "+639171000005",
+      contactNumber: "09171000005",
       email: "pedro.lim@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
     },
@@ -105,7 +105,7 @@ async function main() {
       householdId: "hh_005",
       firstName: "Rosa",
       lastName: "Garcia",
-      contactNumber: "+639171000006",
+      contactNumber: "09171000006",
       email: "rosa.garcia@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
     },
@@ -202,14 +202,24 @@ async function main() {
 
   // ---------- Dependents ----------
   const kasambahay = [
-    { id: "kas_001", memberId: "mem_maria", fullName: "Nena Bautista" },
-    { id: "kas_002", memberId: "mem_pedro", fullName: "Ruel Ocampo" },
+    {
+      id: "kas_001",
+      memberId: "mem_maria",
+      fullName: "Nena Bautista",
+      contactNumber: "09171000011",
+    },
+    {
+      id: "kas_002",
+      memberId: "mem_pedro",
+      fullName: "Ruel Ocampo",
+      contactNumber: "09171000012",
+    },
   ];
 
   for (const person of kasambahay) {
     await prisma.kasambahay.upsert({
       where: { id: person.id },
-      update: { memberId: person.memberId, fullName: person.fullName },
+      update: person,
       create: person,
     });
   }
@@ -257,11 +267,11 @@ async function main() {
   // ---------- Registration requests ----------
   const carloPayload = {
     occupancyType: "OWNER_OCCUPIED",
-    block: "2",
-    lot: "14",
-    kasambahay: [{ fullName: "Beth Mendoza" }],
-    pets: [{ name: "Coco", breed: "Poodle", count: 1 }],
-    vehicles: [{ plateNumber: "XYZ 9012", count: 1 }],
+    kasambahay: [
+      { fullName: "Beth Mendoza", contactNumber: "09171000013" },
+    ],
+    pets: [{ name: "Coco", breed: "Poodle" }],
+    vehicles: [{ plateNumber: "XYZ 9012" }],
     householdMembers: [
       { fullName: "Elena Mendoza", relationship: "Spouse" },
     ],
@@ -275,7 +285,7 @@ async function main() {
       firstName: "Carlo",
       lastName: "Mendoza",
       email: "carlo.mendoza@example.test",
-      contactNumber: "+639171000007",
+      contactNumber: "09171000007",
       unitAddress: "14 Sampaguita St., Phase 1",
       passwordHash: hashSync("Carlo2026", 12),
       consentVersion: CONSENT_VERSION,
@@ -286,14 +296,12 @@ async function main() {
 
   const gracePayload = {
     occupancyType: "TENANT",
-    block: "4",
-    lot: "9",
     kasambahay: [],
     pets: [
-      { name: "Milo", breed: "Aspin", count: 1 },
-      { name: "Tofu", breed: "Puspin", count: 1 },
+      { name: "Milo", breed: "Aspin" },
+      { name: "Tofu", breed: "Puspin" },
     ],
-    vehicles: [{ plateNumber: "QRS 3456", count: 1 }],
+    vehicles: [{ plateNumber: "QRS 3456" }],
     householdMembers: [
       { fullName: "Mark Villanueva", relationship: "Spouse" },
       { fullName: "Mia Villanueva", relationship: "Daughter" },
@@ -308,7 +316,7 @@ async function main() {
       firstName: "Grace",
       lastName: "Villanueva",
       email: "grace.villanueva@example.test",
-      contactNumber: "+639171000008",
+      contactNumber: "09171000008",
       unitAddress: "9 Narra St., Phase 2",
       passwordHash: hashSync("Grace2026", 12),
       consentVersion: CONSENT_VERSION,

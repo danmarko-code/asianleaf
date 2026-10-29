@@ -3,6 +3,7 @@
 import {
   forwardRef,
   useId,
+  useState,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -70,6 +71,56 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-describedby={error ? `${inputId}-error` : undefined}
           {...props}
         />
+      </Field>
+    );
+  },
+);
+
+type PasswordInputProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "type"
+> & {
+  label: string;
+  hint?: string;
+  error?: string;
+};
+
+export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
+  function PasswordInput(
+    { label, hint, error, id, className, ...props },
+    ref,
+  ) {
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
+    const [visible, setVisible] = useState(false);
+
+    return (
+      <Field label={label} hint={hint} error={error} htmlFor={inputId}>
+        <div className="relative">
+          <input
+            ref={ref}
+            id={inputId}
+            type={visible ? "text" : "password"}
+            className={cn(
+              controlClasses,
+              "h-11 pr-16",
+              error && "border-red",
+              className,
+            )}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${inputId}-error` : undefined}
+            {...props}
+          />
+          <button
+            type="button"
+            onClick={() => setVisible((value) => !value)}
+            className="absolute inset-y-0 right-0 rounded-r-md px-3 text-xs font-medium text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf focus-visible:ring-offset-1"
+            aria-label={visible ? "Hide password" : "Show password"}
+            aria-pressed={visible}
+          >
+            {visible ? "Hide" : "Show"}
+          </button>
+        </div>
       </Field>
     );
   },

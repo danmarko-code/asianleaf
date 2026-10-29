@@ -23,10 +23,11 @@ npm run db:studio
 ```
 
 ## Git state
-- Last commit: `dc6d0be chore(phase-0): complete app scaffold, design system, shells, schema and seed`
-- Nothing since that commit has been committed or pushed.
-- The working tree contains all Phase 1/auth, QR payments, violations, member
-  search, dark mode, and Phase 2 registration work.
+- Last commit: `1edd6c3 feat: complete auth, payments, violations and household registration`
+- Pushed to `origin/main`.
+- Since then: registration refinements (11-digit contacts, owner/tenant only,
+  kasambahay contacts, relationship dropdown, password checklist, no block/lot,
+  no pet/vehicle counts) and login copy cleanup are uncommitted.
 - Do not commit or push unless the user explicitly asks.
 
 ## Implemented so far
@@ -45,8 +46,12 @@ npm run db:studio
 - **Dark mode:** persisted theme toggle in auth/admin/homeowner headers and design
   guide; system preference on first visit.
 - **Phase 2 registration:**
-  - `/register` two-step form: account/unit, occupancy, household members,
-    kasambahay, pets, vehicles, Data Privacy consent.
+  - `/register` two-step form: account/unit, owner/tenant occupancy, household
+    members with relationship dropdown, kasambahay with 11-digit contacts, pets,
+    vehicles, Data Privacy consent.
+  - Contact numbers are exactly 11 digits. Passwords need at least 8 characters,
+    upper and lowercase letters, and a number; the form shows live checks.
+  - No block/lot fields and no pet/vehicle count fields in registration.
   - Password hashed; request stored `PENDING`; no login until approval.
   - Duplicate email/unit/pending-request protection; errors preserve entered data
     and return to the correct step.
@@ -57,14 +62,18 @@ npm run db:studio
 - Seed updated for registration payloads; README updated.
 
 ## Validation already done
-- `npm run db:seed` is idempotent; counts: users 6, households 5, members 6,
+- `npm run db:seed` is idempotent; seed data: users 6, households 5, members 6,
   dues 15, payments 10, paymentChannels 1, violations 3, budgetEntries 6,
-  registrationRequests 2, feedback 3.
+  registrationRequests 2, feedback 3. The live DB currently has one additional
+  pending request submitted through the app, so the total count is 3.
 - Registration success, duplicate rejection with field preservation, admin
   approval, rejection, approved-user login, member filters, theme toggle.
-- `npm run lint`, `npm run typecheck`, `npm run build` pass.
-- Test applicant data was cleaned up; sessions cleared; 2 pending seeded requests
-  remain.
+- `npm run lint`, `npm run typecheck`, `npm run build` pass. Stop the dev server
+  before building; a running dev server can corrupt `.next` and trigger
+  `/_not-found` invariant errors.
+- Two pending seeded requests remain plus one pending app-submitted request.
+- Latest migrations: `20261029013000_kasambahay_contact_number` and
+  `20261029014500_restrict_occupancy_types`.
 
 ## Next phase
 Complete Phase 3 member records:
@@ -78,8 +87,8 @@ OTP/password reset, email/SMS delivery, audit logs.
 - Official GCash QR image is not supplied; UI shows “QR image pending.”
 - No audit-log writes for approvals/violations yet.
 - No outbound email/SMS; approval notification is in-app only.
-- Registration, budget entry, feedback submission, password reset/OTP, dues
-  generation and reminders still need work.
+- Budget entry, feedback submission, password reset/OTP, dues generation and
+  reminders still need work.
 - `next.config.ts` has `devIndicators: false` because the dev badge overlapped
   the theme toggle.
 - Test accounts use password `Leaf2026!`: `admin@asialeaf.test`,

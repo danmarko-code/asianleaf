@@ -25,8 +25,7 @@ import { parseRegistrationPayload } from "@/lib/registration";
 export const metadata: Metadata = { title: "Register requests" };
 
 const occupancyLabels = {
-  OWNER_OCCUPIED: "Owner-occupied",
-  OWNER_NON_OCCUPIED: "Owner, not living in the unit",
+  OWNER_OCCUPIED: "Owner",
   TENANT: "Tenant",
 } as const;
 
@@ -104,7 +103,7 @@ export default async function AdminRequestsPage({
                 <CardBody className="space-y-6">
                   {parsed.success ? (
                     <>
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="grid gap-4 sm:grid-cols-3">
                         <Detail label="Email" value={request.email} />
                         <Detail
                           label="Contact"
@@ -113,21 +112,6 @@ export default async function AdminRequestsPage({
                         <Detail
                           label="Occupancy"
                           value={occupancyLabels[parsed.data.occupancyType]}
-                        />
-                        <Detail
-                          label="Block / lot"
-                          value={
-                            [
-                              parsed.data.block
-                                ? `Block ${parsed.data.block}`
-                                : null,
-                              parsed.data.lot
-                                ? `Lot ${parsed.data.lot}`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ") || "Not provided"
-                          }
                         />
                       </div>
 
@@ -144,7 +128,8 @@ export default async function AdminRequestsPage({
                           title="Kasambahay"
                           empty="No kasambahay listed."
                           items={parsed.data.kasambahay.map(
-                            (row) => row.fullName,
+                            (row) =>
+                              `${row.fullName} — ${row.contactNumber || "contact not provided"}`,
                           )}
                         />
                         <DetailList
@@ -152,14 +137,14 @@ export default async function AdminRequestsPage({
                           empty="No pets listed."
                           items={parsed.data.pets.map(
                             (row) =>
-                              `${row.name}${row.breed ? ` (${row.breed})` : ""} — ${row.count}`,
+                              `${row.name}${row.breed ? ` (${row.breed})` : ""}`,
                           )}
                         />
                         <DetailList
                           title="Vehicles"
                           empty="No vehicles listed."
                           items={parsed.data.vehicles.map(
-                            (row) => `${row.plateNumber} — ${row.count}`,
+                            (row) => row.plateNumber,
                           )}
                         />
                       </div>

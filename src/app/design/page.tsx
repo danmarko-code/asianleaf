@@ -38,7 +38,7 @@ const colors = [
 
 const tableRows = [
   ["12 Sampaguita St., Phase 1", "Maria Santos", "Owner-occupied", "PHP 0.00"],
-  ["8 Ilang-Ilang St., Phase 1", "Jose Reyes", "Owner, non-occupied", "PHP 800.00"],
+  ["8 Ilang-Ilang St., Phase 1", "Jose Reyes", "Owner", "PHP 800.00"],
   ["22 Narra St., Phase 2", "Ana Dela Cruz", "Tenant", "PHP 1,500.00"],
   ["5 Acacia Lane, Phase 2", "Pedro Lim", "Owner-occupied", "PHP 0.00"],
 ];
@@ -161,15 +161,14 @@ export default async function DesignPage() {
           <Card className="p-6">
             <div className="grid gap-5 sm:grid-cols-2">
               <Input label="First name" defaultValue="Maria" />
-              <Input label="Contact number" defaultValue="+639171000001" />
+              <Input label="Contact number" defaultValue="09171000001" />
               <Input
                 label="Email"
                 defaultValue="maria.santos"
                 error="Enter a valid email address."
               />
               <Select label="Occupancy" defaultValue="OWNER_OCCUPIED">
-                <option value="OWNER_OCCUPIED">Owner-occupied</option>
-                <option value="OWNER_NON_OCCUPIED">Owner, non-occupied</option>
+                <option value="OWNER_OCCUPIED">Owner</option>
                 <option value="TENANT">Tenant</option>
               </Select>
               <div className="sm:col-span-2">

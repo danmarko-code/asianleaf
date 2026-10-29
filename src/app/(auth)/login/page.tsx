@@ -4,14 +4,8 @@ import { redirect } from "next/navigation";
 import { loginAction } from "@/app/(auth)/actions";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardBody,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/form";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input, PasswordInput } from "@/components/ui/form";
 import { getSessionUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -32,9 +26,6 @@ export default async function LoginPage({
     <Card>
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
-        <CardDescription>
-          Use the email and password issued to your household.
-        </CardDescription>
       </CardHeader>
       <CardBody>
         <form action={loginAction} className="space-y-4">
@@ -49,10 +40,9 @@ export default async function LoginPage({
             required
             placeholder="name@example.com"
           />
-          <Input
+          <PasswordInput
             label="Password"
             name="password"
-            type="password"
             autoComplete="current-password"
             required
             placeholder="Your password"

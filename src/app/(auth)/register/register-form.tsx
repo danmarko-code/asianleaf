@@ -11,16 +11,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox, Input, Select } from "@/components/ui/form";
+import {
+  Checkbox,
+  Input,
+  PasswordInput,
+  Select,
+} from "@/components/ui/form";
+import { CheckIcon } from "@/components/icons";
 
 type Person = { fullName: string; relationship: string };
-type Pet = { name: string; breed: string; count: string };
-type Vehicle = { plateNumber: string; count: string };
-type Kasambahay = { fullName: string };
+type Pet = { name: string; breed: string };
+type Vehicle = { plateNumber: string };
+type Kasambahay = { fullName: string; contactNumber: string };
 
 export function RegisterForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState<1 | 2>(1);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [clientError, setClientError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -29,6 +37,16 @@ export function RegisterForm() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [kasambahay, setKasambahay] = useState<Kasambahay[]>([]);
+
+  const passwordChecks = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    {
+      label: "Upper and lowercase letters",
+      met: /[a-z]/.test(password) && /[A-Z]/.test(password),
+    },
+    { label: "At least one number", met: /\d/.test(password) },
+  ];
+  const passwordMeetsRequirements = passwordChecks.every((check) => check.met);
 
   const payload = JSON.stringify({
     householdMembers: householdMembers
@@ -42,17 +60,18 @@ export function RegisterForm() {
       .map((row) => ({
         name: row.name.trim(),
         breed: row.breed.trim() || undefined,
-        count: Number(row.count) || 1,
       })),
     vehicles: vehicles
       .filter((row) => row.plateNumber.trim())
       .map((row) => ({
         plateNumber: row.plateNumber.trim(),
-        count: Number(row.count) || 1,
       })),
     kasambahay: kasambahay
       .filter((row) => row.fullName.trim())
-      .map((row) => ({ fullName: row.fullName.trim() })),
+      .map((row) => ({
+        fullName: row.fullName.trim(),
+        contactNumber: row.contactNumber.trim(),
+      })),
   });
 
   function continueToStepTwo() {
@@ -70,6 +89,13 @@ export function RegisterForm() {
         field.reportValidity();
         return;
       }
+    }
+
+    if (!passwordMeetsRequirements) {
+      setClientError(
+        "Use at least 8 characters with upper and lowercase letters and a number.",
+      );
+      return;
     }
 
     const data = new FormData(form);
@@ -168,34 +194,56 @@ export function RegisterForm() {
               type="tel"
               data-step="1"
               autoComplete="tel"
-              inputMode="tel"
+              inputMode="numeric"
               required
-              minLength={7}
-              maxLength={30}
-              placeholder="+63 917 000 0000"
+              minLength={11}
+              maxLength={11}
+              pattern="[0-9]{11}"
+              placeholder="09171234567"
+              hint="11-digit mobile number used for due reminders."
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                label="Password"
-                name="password"
-                type="password"
-                data-step="1"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                maxLength={72}
-                hint="At least 8 characters."
-              />
-              <Input
+              <div>
+                <PasswordInput
+                  label="Password"
+                  name="password"
+                  data-step="1"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  maxLength={72}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <ul
+                  className="mt-2 space-y-1 text-xs text-muted"
+                  aria-live="polite"
+                >
+                  {passwordChecks.map((check) => (
+                    <li key={check.label} className="flex items-center gap-2">
+                      {check.met ? (
+                        <CheckIcon className="h-4 w-4 text-leaf" />
+                      ) : (
+                        <span className="h-4 w-4 rounded-full border border-line" />
+                      )}
+                      <span className={check.met ? "text-ink" : undefined}>
+                        {check.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <PasswordInput
                 label="Confirm password"
                 name="confirmPassword"
-                type="password"
                 data-step="1"
                 autoComplete="new-password"
                 required
                 minLength={8}
                 maxLength={72}
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
               />
             </div>
 
@@ -209,40 +257,17 @@ export function RegisterForm() {
               placeholder="12 Sampaguita St., Phase 1"
             />
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="sm:col-span-1">
-                <Input
-                  label="Block"
-                  name="block"
-                  data-step="1"
-                  maxLength={20}
-                  placeholder="1"
-                />
-              </div>
-              <div className="sm:col-span-1">
-                <Input
-                  label="Lot"
-                  name="lot"
-                  data-step="1"
-                  maxLength={20}
-                  placeholder="12"
-                />
-              </div>
-              <div className="sm:col-span-1">
-                <Select
-                  label="Occupancy"
-                  name="occupancyType"
-                  data-step="1"
-                  required
-                  defaultValue="OWNER_OCCUPIED"
-                >
-                  <option value="OWNER_OCCUPIED">Owner-occupied</option>
-                  <option value="OWNER_NON_OCCUPIED">
-                    Owner, not living in the unit
-                  </option>
-                  <option value="TENANT">Tenant</option>
-                </Select>
-              </div>
+            <div className="sm:max-w-xs">
+              <Select
+                label="Occupancy"
+                name="occupancyType"
+                data-step="1"
+                required
+                defaultValue="OWNER_OCCUPIED"
+              >
+                <option value="OWNER_OCCUPIED">Owner</option>
+                <option value="TENANT">Tenant</option>
+              </Select>
             </div>
 
             <Button type="button" onClick={continueToStepTwo} className="w-full">
@@ -292,8 +317,9 @@ export function RegisterForm() {
                     }
                     maxLength={120}
                   />
-                  <Input
+                  <Select
                     label="Relationship"
+                    required
                     value={row.relationship}
                     onChange={(event) =>
                       setHouseholdMembers((rows) =>
@@ -304,9 +330,15 @@ export function RegisterForm() {
                         ),
                       )
                     }
-                    maxLength={60}
-                    placeholder="Spouse, child, parent"
-                  />
+                  >
+                    <option value="">Select relationship</option>
+                    <option value="Spouse">Spouse</option>
+                    <option value="Child">Child</option>
+                    <option value="Parent">Parent</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Relative">Relative</option>
+                    <option value="Other">Other</option>
+                  </Select>
                   <div className="flex items-end">
                     <Button
                       type="button"
@@ -330,14 +362,17 @@ export function RegisterForm() {
               description="Household help staying or working at the unit."
               actionLabel="Add kasambahay"
               onAdd={() =>
-                setKasambahay((rows) => [...rows, { fullName: "" }])
+                setKasambahay((rows) => [
+                  ...rows,
+                  { fullName: "", contactNumber: "" },
+                ])
               }
               empty={kasambahay.length === 0}
             >
               {kasambahay.map((row, index) => (
                 <div
                   key={index}
-                  className="grid gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_auto]"
+                  className="grid gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_180px_auto]"
                 >
                   <Input
                     label="Full name"
@@ -352,6 +387,26 @@ export function RegisterForm() {
                       )
                     }
                     maxLength={120}
+                  />
+                  <Input
+                    label="Contact number"
+                    type="tel"
+                    inputMode="numeric"
+                    required
+                    minLength={11}
+                    maxLength={11}
+                    pattern="[0-9]{11}"
+                    placeholder="09171234567"
+                    value={row.contactNumber}
+                    onChange={(event) =>
+                      setKasambahay((rows) =>
+                        rows.map((item, rowIndex) =>
+                          rowIndex === index
+                            ? { ...item, contactNumber: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
                   />
                   <div className="flex items-end">
                     <Button
@@ -373,20 +428,17 @@ export function RegisterForm() {
 
             <RepeatableSection
               title="Pets"
-              description="List each pet and the number kept at the unit."
+              description="List each pet kept at the unit."
               actionLabel="Add pet"
               onAdd={() =>
-                setPets((rows) => [
-                  ...rows,
-                  { name: "", breed: "", count: "1" },
-                ])
+                setPets((rows) => [...rows, { name: "", breed: "" }])
               }
               empty={pets.length === 0}
             >
               {pets.map((row, index) => (
                 <div
                   key={index}
-                  className="grid gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_1fr_100px_auto]"
+                  className="grid gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_1fr_auto]"
                 >
                   <Input
                     label="Name"
@@ -416,22 +468,6 @@ export function RegisterForm() {
                     }
                     maxLength={60}
                   />
-                  <Input
-                    label="Count"
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={row.count}
-                    onChange={(event) =>
-                      setPets((rows) =>
-                        rows.map((item, rowIndex) =>
-                          rowIndex === index
-                            ? { ...item, count: event.target.value }
-                            : item,
-                        ),
-                      )
-                    }
-                  />
                   <div className="flex items-end">
                     <Button
                       type="button"
@@ -455,17 +491,14 @@ export function RegisterForm() {
               description="List the plate numbers kept at the household."
               actionLabel="Add vehicle"
               onAdd={() =>
-                setVehicles((rows) => [
-                  ...rows,
-                  { plateNumber: "", count: "1" },
-                ])
+                setVehicles((rows) => [...rows, { plateNumber: "" }])
               }
               empty={vehicles.length === 0}
             >
               {vehicles.map((row, index) => (
                 <div
                   key={index}
-                  className="grid gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_100px_auto]"
+                  className="grid gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_auto]"
                 >
                   <Input
                     label="Plate number"
@@ -481,22 +514,6 @@ export function RegisterForm() {
                     }
                     maxLength={20}
                     placeholder="ABC 1234"
-                  />
-                  <Input
-                    label="Count"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={row.count}
-                    onChange={(event) =>
-                      setVehicles((rows) =>
-                        rows.map((item, rowIndex) =>
-                          rowIndex === index
-                            ? { ...item, count: event.target.value }
-                            : item,
-                        ),
-                      )
-                    }
                   />
                   <div className="flex items-end">
                     <Button

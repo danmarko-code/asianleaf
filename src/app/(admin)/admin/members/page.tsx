@@ -14,8 +14,7 @@ import { prisma } from "@/lib/db";
 export const metadata: Metadata = { title: "Members" };
 
 const occupancyLabels = {
-  OWNER_OCCUPIED: "Owner-occupied",
-  OWNER_NON_OCCUPIED: "Owner, non-occupied",
+  OWNER_OCCUPIED: "Owner",
   TENANT: "Tenant",
 } as const;
 
@@ -82,7 +81,6 @@ export default async function AdminMembersPage({
 
   if (
     occupancy === "OWNER_OCCUPIED" ||
-    occupancy === "OWNER_NON_OCCUPIED" ||
     occupancy === "TENANT"
   ) {
     filters.push({ occupancyType: occupancy });
@@ -169,8 +167,7 @@ export default async function AdminMembersPage({
                 defaultValue={occupancy}
               >
                 <option value="">All occupancies</option>
-                <option value="OWNER_OCCUPIED">Owner-occupied</option>
-                <option value="OWNER_NON_OCCUPIED">Owner, non-occupied</option>
+                <option value="OWNER_OCCUPIED">Owner</option>
                 <option value="TENANT">Tenant</option>
               </Select>
             </div>
