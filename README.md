@@ -1,9 +1,9 @@
 # Asian Leaf HOA
 
 A mobile-friendly portal for the **Asian Leaf Homeowners Association**, General
-Trias, Cavite. Homeowners register their household, pay monthly dues through the
-association's GCash account, and read notices. Administrators review
-registrations, verify payments, manage household records, generate dues, issue
+Trias, Cavite. Homeowners sign in with a username to pay monthly dues through the
+association's GCash account and read notices. Administrators create household
+records and logins, verify payments, manage members, generate dues, issue
 violations, publish the budget report, answer feedback and inspect an audit log.
 
 ---
@@ -116,39 +116,34 @@ npm run db:seed
 ### 2.1 Sign in
 
 1. Open `/login`.
-2. Enter one of the seeded accounts below.
+2. Enter one of the seeded usernames below and its password.
 3. Admins land on `/admin/dashboard`; homeowners land on `/app/dashboard`.
 4. Use **Forgot your password?** to reset with a 6-digit code.
 
-Only `ACTIVE` accounts can sign in. Pending registrations are refused until an
-administrator approves them.
+Only `ACTIVE` accounts can sign in. The association office creates every login;
+there is no public registration form.
 
-### 2.2 Register a household (homeowner)
+### 2.2 Add a household (admin)
 
-1. Open `/register`.
-2. **Step 1 — Account and unit:** first/last name, email (this becomes the
-   login), 11-digit contact number, password (8+ characters, upper and lower
-   case, one number), **street** (dropdown, with an *Other street*
-   option), **block** and **lot**. A live preview shows the composed address,
-   for example `Blk 2 Lot 14, Sampaguita St.`.
-3. **Step 2 — Household:** dependents with a relationship, kasambahay with
-   their 11-digit contacts, pets, vehicles and the Data Privacy consent.
-4. Submit. Nothing is activated yet; the request is stored as `PENDING`.
-5. Warn the applicant that duplicates (same email, unit or pending request) are
-   rejected before saving.
+1. Open **Members** and choose **Add member**.
+2. **Account and login:** choose a unique username, then set and confirm the
+   password (8+ characters, upper and lower case, one number).
+3. **Primary resident:** first/last name, 11-digit contact number and
+   owner/tenant occupancy. Signing in uses the username, not an email.
+4. **Unit:** street (dropdown, with an *Other street* option), **block** and
+   **lot**. A live preview shows the composed address, for example
+   `Blk 2 Lot 14, Sampaguita St.`.
+5. **People and property:** dependents with a relationship, kasambahay with
+   their 11-digit contacts, pets and vehicles.
+6. Submit. The household, primary resident, dependents, kasambahay, pets,
+   vehicles and the homeowner login are created in one transaction. Share the
+   username and initial password with the resident.
 
-### 2.3 Review registrations (admin)
+Duplicates are rejected: username, contact number and unit address must all be
+unused. A placeholder email is generated from the username and can be replaced
+later from the member record or the homeowner profile.
 
-1. Go to **Register requests**.
-2. Each card shows contact details, street/block/lot, household members,
-   kasambahay, pets, vehicles and consent.
-3. Correct the unit fields if the applicant mistyped them, then **Approve**.
-   Approval creates the household, primary resident, dependents, kasambahay,
-   pets, vehicles and the single homeowner login — and sends an in-app
-   notification.
-4. **Reject** with a short reason; the applicant can submit again.
-
-### 2.4 Find and edit member records (admin)
+### 2.3 Find and edit member records (admin)
 
 1. Open **Members**.
 2. Filter by free-text search, **street dropdown**, **block**, **lot**,
@@ -161,7 +156,7 @@ administrator approves them.
    - **Violations** — the household's notice history.
 4. Every edit is written to the audit log.
 
-### 2.5 Generate dues and send reminders (admin)
+### 2.4 Generate dues and send reminders (admin)
 
 1. Open **Dues**.
 2. Pick the **billing month** and press **Generate dues**. Every household is
@@ -180,7 +175,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
   http://localhost:3000/api/cron/reminders
 ```
 
-### 2.6 Verify GCash payments (homeowner + admin)
+### 2.5 Verify GCash payments (homeowner + admin)
 
 1. Homeowner: open **Dues** → `/app/payments`, scan the HOA GCash QR (or use the
    displayed account details), send the amount, keep the screenshot.
@@ -191,7 +186,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 4. Approval marks the payment `PAID`, generates a receipt number, updates the
    due to `PARTIALLY_PAID` or `PAID`, and notifies the homeowner.
 
-### 2.7 Issue violations (admin)
+### 2.6 Issue violations (admin)
 
 1. Open **Violations**.
 2. Choose the household (optionally a resident), type, category, description and
@@ -201,21 +196,21 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
    `/app/violations`.
 5. Mark a notice **Resolved** or **Dismissed** when settled.
 
-### 2.8 Transparency report (admin + homeowner)
+### 2.7 Transparency report (admin + homeowner)
 
 - Admin: **Budget** → add income or expense entries (type, category,
   description, amount, date), review monthly totals and delete mistakes.
 - Homeowner: dashboard → **Transparency report** (`/app/budget`) for the
   read-only list and monthly totals.
 
-### 2.9 Feedback (homeowner + admin)
+### 2.8 Feedback (homeowner + admin)
 
 1. Homeowner: open **Feedback**, add an optional subject and a message.
 2. Admin: **Feedback** shows the inbox with unread/open counts.
 3. Set the status (`New` → `In review` → `Resolved`) and write a reply note. The
    homeowner sees the note on `/app/feedback` and receives a notification.
 
-### 2.10 Profile and password (homeowner)
+### 2.9 Profile and password (homeowner)
 
 - **Profile** (`/app/profile`): edit email and contact number; add or remove
   dependents, kasambahay, pets and vehicles. Unit details are admin-controlled.
@@ -227,13 +222,12 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 - **Forgot password** (`/forgot-password`): request a code by email and set a new
   password. The form never reveals whether an email is registered.
 
-### 2.11 Audit log (admin)
+### 2.10 Audit log (admin)
 
 **Audit log** lists the last 100 privileged actions with actor, entity and JSON
-metadata. Recorded actions include registration approval/rejection, payment
-approval/rejection, violation changes, dues generation/waiving, reminder runs,
-member and household edits, budget entries, feedback updates and password
-changes.
+metadata. Recorded actions include member creation, payment approval/rejection,
+violation changes, dues generation/waiving, reminder runs, member and household
+edits, budget entries, feedback updates and password changes.
 
 ---
 
@@ -243,14 +237,17 @@ changes.
 
 ### Accounts — password `Leaf2026!`
 
-| Role | Email |
+| Role | Username |
 | --- | --- |
-| Admin | `admin@asialeaf.test` |
-| Treasurer | `treasurer@asialeaf.test` |
-| Homeowner | `maria.santos@example.test` |
-| Homeowner | `jose.reyes@example.test` |
-| Homeowner | `ana.delacruz@example.test` |
-| Homeowner | `pedro.lim@example.test` |
+| Admin | `admin` |
+| Treasurer | `treasurer` |
+| Homeowner | `maria.santos` |
+| Homeowner | `jose.reyes` |
+| Homeowner | `ana.delacruz` |
+| Homeowner | `pedro.lim` |
+
+Each account also keeps an email address for records (`admin@asialeaf.test`,
+`maria.santos@example.test`, and so on), but sign-in uses the username.
 
 `rosa.garcia@example.test` belongs to a household with **no login**, which is
 useful for testing admin-only records.
@@ -285,7 +282,7 @@ useful for testing admin-only records.
   - `AL-SEED-0005` — `hh_005`, `PHP 1,500.00`
   - `AL-SEED-0006` — `hh_003`, `PHP 1,500.00`
 - One active payment channel: **GCash**, `Asian Leaf HOA`, `0917 000 0000`, with
-  the QR image pending.
+  the QR image at `/gcash-qr.png`.
 
 ### Violations
 
@@ -310,13 +307,9 @@ repairs and utilities (expense).
 
 ### Registration requests
 
-| Applicant | Unit | Status | Password |
-| --- | --- | --- | --- |
-| Carlo Mendoza | Blk 2 Lot 14, Sampaguita St. | Pending | `Carlo2026` |
-| Grace Villanueva | Blk 4 Lot 9, Narra St. | Pending | `Grace2026` |
-
-Requests submitted through the app are additional pending rows; approve or
-reject them from **Register requests**.
+Self-registration and the admin approval queue were removed. Members are now
+created directly from **Members → Add member**; each new record is active
+immediately.
 
 ### Other seeded rows
 
@@ -328,12 +321,9 @@ Seed counts after a fresh seed:
 
 ```text
 users 6 · households 5 · members 6 · dues 15 · payments 10
-paymentChannels 1 · violations 3 · budgetEntries 6
-registrationRequests 2 · feedback 3
+paymentChannels 1 · violations 3 · budgetEntries 6 · feedback 3
 plus 2 kasambahay, 2 pets, 2 vehicles, 3 dependents, 4 notifications
 ```
-
-An extra app-submitted pending request raises `registrationRequests` to 3.
 
 ---
 
@@ -342,13 +332,12 @@ An extra app-submitted pending request raises `registrationRequests` to 3.
 | Route | Access | What it shows |
 | --- | --- | --- |
 | `/` | Public | Redirects to the signed-in dashboard or `/login` |
-| `/login` | Public | Email/password sign-in |
-| `/register` | Public | Two-step household registration |
+| `/login` | Public | Username/password sign-in |
 | `/forgot-password` | Public | OTP-based password reset |
 | `/admin/dashboard` | Admin | Collections, unpaid dues, pending work |
 | `/admin/members` | Admin | Search and filter household records |
+| `/admin/members/new` | Admin | Create a household and portal login |
 | `/admin/members/[id]` | Admin | Household record with tabs and edit forms |
-| `/admin/requests` | Admin | Registration review queue |
 | `/admin/dues` | Admin | Billing run, balances, reminders |
 | `/admin/payments` | Admin | GCash verification queue |
 | `/admin/violations` | Admin | Issue and close notices |
@@ -375,8 +364,8 @@ session, expiry and status checks.
 
 1. `npm run lint`, `npm run typecheck` and `npm run build` pass.
 2. The seed runs twice without changing counts.
-3. Registration rejects duplicate email, unit and pending requests.
-4. Approving a request creates the household, login and all submitted records.
+3. Adding a member rejects duplicate username, contact number and unit.
+4. Creating a member makes the household, login and all entered records.
 5. `/admin/members` filters by street, block and lot.
 6. Editing a member or household writes an audit entry.
 7. Generating dues twice creates one due per household per month.

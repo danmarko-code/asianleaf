@@ -11,20 +11,28 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
-const controlClasses =
-  "w-full rounded-md border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted disabled:cursor-not-allowed disabled:bg-cream";
+const controlBase =
+  "w-full rounded-md border bg-surface px-3 text-sm text-ink placeholder:text-muted disabled:cursor-not-allowed disabled:bg-cream";
+
+// The error state swaps the border colour instead of adding a second border
+// class, so the red outline always wins (cn does not merge Tailwind classes).
+function controlClasses(hasError: boolean) {
+  return cn(controlBase, hasError ? "border-red" : "border-line");
+}
 
 function Field({
   label,
   hint,
   error,
   htmlFor,
+  required,
   children,
 }: {
   label: string;
   hint?: string;
   error?: string;
   htmlFor: string;
+  required?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -34,10 +42,21 @@ function Field({
         className="block text-sm font-medium text-ink"
       >
         {label}
+        {required ? (
+          <span aria-hidden="true" className="ml-0.5 text-red">
+            *
+          </span>
+        ) : null}
       </label>
       <div className="mt-1.5">{children}</div>
       {error ? (
-        <p className="mt-1.5 text-xs text-red">{error}</p>
+        <p
+          id={`${htmlFor}-error`}
+          role="alert"
+          className="mt-1.5 text-xs text-red"
+        >
+          {error}
+        </p>
       ) : hint ? (
         <p className="mt-1.5 text-xs text-muted">{hint}</p>
       ) : null}
@@ -52,23 +71,25 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  function Input({ label, hint, error, id, className, ...props }, ref) {
+  function Input({ label, hint, error, required, id, className, ...props }, ref) {
     const generatedId = useId();
     const inputId = id ?? generatedId;
 
     return (
-      <Field label={label} hint={hint} error={error} htmlFor={inputId}>
+      <Field
+        label={label}
+        hint={hint}
+        error={error}
+        htmlFor={inputId}
+        required={required}
+      >
         <input
           ref={ref}
           id={inputId}
-          className={cn(
-            controlClasses,
-            "h-11",
-            error && "border-red",
-            className,
-          )}
+          className={cn(controlClasses(Boolean(error)), "h-11", className)}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${inputId}-error` : undefined}
+          required={required}
           {...props}
         />
       </Field>
@@ -87,7 +108,7 @@ type PasswordInputProps = Omit<
 
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   function PasswordInput(
-    { label, hint, error, id, className, ...props },
+    { label, hint, error, required, id, className, ...props },
     ref,
   ) {
     const generatedId = useId();
@@ -95,20 +116,26 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     const [visible, setVisible] = useState(false);
 
     return (
-      <Field label={label} hint={hint} error={error} htmlFor={inputId}>
+      <Field
+        label={label}
+        hint={hint}
+        error={error}
+        htmlFor={inputId}
+        required={required}
+      >
         <div className="relative">
           <input
             ref={ref}
             id={inputId}
             type={visible ? "text" : "password"}
             className={cn(
-              controlClasses,
+              controlClasses(Boolean(error)),
               "h-11 pr-16",
-              error && "border-red",
               className,
             )}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? `${inputId}-error` : undefined}
+            required={required}
             {...props}
           />
           <button
@@ -133,22 +160,28 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
 };
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  function Textarea({ label, hint, error, id, className, ...props }, ref) {
+  function Textarea({ label, hint, error, required, id, className, ...props }, ref) {
     const generatedId = useId();
     const inputId = id ?? generatedId;
 
     return (
-      <Field label={label} hint={hint} error={error} htmlFor={inputId}>
+      <Field
+        label={label}
+        hint={hint}
+        error={error}
+        htmlFor={inputId}
+        required={required}
+      >
         <textarea
           ref={ref}
           id={inputId}
           className={cn(
-            controlClasses,
+            controlClasses(Boolean(error)),
             "min-h-28 py-2.5",
-            error && "border-red",
             className,
           )}
           aria-invalid={error ? true : undefined}
+          required={required}
           {...props}
         />
       </Field>
@@ -163,22 +196,24 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
 };
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  function Select({ label, hint, error, id, className, ...props }, ref) {
+  function Select({ label, hint, error, required, id, className, ...props }, ref) {
     const generatedId = useId();
     const inputId = id ?? generatedId;
 
     return (
-      <Field label={label} hint={hint} error={error} htmlFor={inputId}>
+      <Field
+        label={label}
+        hint={hint}
+        error={error}
+        htmlFor={inputId}
+        required={required}
+      >
         <select
           ref={ref}
           id={inputId}
-          className={cn(
-            controlClasses,
-            "h-11",
-            error && "border-red",
-            className,
-          )}
+          className={cn(controlClasses(Boolean(error)), "h-11", className)}
           aria-invalid={error ? true : undefined}
+          required={required}
           {...props}
         />
       </Field>

@@ -1,0 +1,36 @@
+%% Asian Leaf HOA - Chart 04
+%% Chart D = budget entries, Chart E = feedback
+flowchart TD
+
+  subgraph BUDGET["Chart D - Budget"]
+    BD1(["Start: admin opens /admin/budget"])
+    BD2[/"Enter type (income or expense), category,<br/>description, amount, entry date"/]
+    BD3{"Amount greater than zero<br/>and date valid?"}
+    BD4[/"Show field error"/]
+    BD5[("Save BudgetEntry")]
+    BD6["Write audit log entry"]
+    BD7["Homeowner sees the entry read-only on /app/budget"]
+    BD8(["End"])
+  end
+
+  subgraph FEEDBACK["Chart E - Feedback"]
+    F1(["Start: homeowner writes feedback"])
+    F2[/"Subject + message"/]
+    F3{"Subject and message not empty?"}
+    F4[/"Show field error"/]
+    F5[("Save Feedback<br/>status = NEW")]
+    F6["Admin opens /admin/feedback"]
+    F7{"Set status"}
+    F8[("status = READ or RESOLVED<br/>save admin note")]
+    F9["NOTIFY: author sees the reply, plus audit log"]
+    F10(["End"])
+  end
+
+  BD1 --> BD2 --> BD3
+  BD3 -->|No| BD4 --> BD2
+  BD3 -->|Yes| BD5 --> BD6 --> BD7 --> BD8
+
+  F1 --> F2 --> F3
+  F3 -->|No| F4 --> F2
+  F3 -->|Yes| F5 --> F6
+  F6 --> F7 --> F8 --> F9 --> F10

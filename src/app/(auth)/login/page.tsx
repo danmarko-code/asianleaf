@@ -32,13 +32,11 @@ export default async function LoginPage({
           {error ? <Alert tone="danger">{error}</Alert> : null}
 
           <Input
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            inputMode="email"
+            label="Username"
+            name="username"
+            autoComplete="username"
             required
-            placeholder="name@example.com"
+            placeholder="e.g. maria.santos"
           />
           <PasswordInput
             label="Password"
@@ -63,18 +61,7 @@ export default async function LoginPage({
         </p>
 
         <p className="mt-4 text-xs text-muted">
-          Only confirmed accounts can sign in. Pending registrations must be
-          approved by an administrator first.
-        </p>
-
-        <p className="mt-4 text-sm text-muted">
-          New household?{" "}
-          <Link
-            href="/register"
-            className="text-forest underline underline-offset-4"
-          >
-            Register your unit
-          </Link>
+          Household logins are issued by the association office.
         </p>
       </CardBody>
     </Card>

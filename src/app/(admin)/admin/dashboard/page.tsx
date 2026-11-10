@@ -22,7 +22,6 @@ export default async function AdminDashboardPage() {
     homeowners,
     collected,
     unpaidDues,
-    pendingRequests,
     pendingPayments,
     openViolations,
   ] = await Promise.all([
@@ -37,7 +36,6 @@ export default async function AdminDashboardPage() {
     prisma.due.count({
       where: { status: { in: ["UNPAID", "PARTIALLY_PAID"] } },
     }),
-    prisma.registrationRequest.count({ where: { status: "PENDING" } }),
     prisma.payment.count({ where: { status: "PENDING" } }),
     prisma.violation.count({ where: { status: "OPEN" } }),
   ]);
@@ -53,11 +51,6 @@ export default async function AdminDashboardPage() {
       label: "Open violations",
       value: openViolations,
     },
-    {
-      href: "/admin/requests",
-      label: "Pending registration requests",
-      value: pendingRequests,
-    },
   ];
 
   return (
@@ -68,7 +61,7 @@ export default async function AdminDashboardPage() {
         description="Collections, unpaid dues and community notices for the association."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           label="Homeowners"
           value={String(homeowners)}
@@ -83,11 +76,6 @@ export default async function AdminDashboardPage() {
           label="Unpaid dues"
           value={String(unpaidDues)}
           hint="Includes partial payments and overdue balances."
-        />
-        <StatCard
-          label="Pending requests"
-          value={String(pendingRequests)}
-          hint="Registration approvals still waiting."
         />
       </div>
 

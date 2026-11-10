@@ -1,0 +1,41 @@
+%% Asian Leaf HOA - Chart 03
+%% Violations: issue -> red dashboard alert -> resolve or dismiss
+%% NOTE: a PAYMENT_REQUIRED violation stores a fine, but no Due is created,
+%% so the fine is NOT payable in-app yet. That gap is intentional.
+flowchart TD
+
+  subgraph ADM["Admin (/admin/violations)"]
+    C1(["Start: admin opens /admin/violations"])
+    C2[/"Pick household, optional resident, category,<br/>description, date"/]
+    C3{"Notice kind?"}
+    C4["Save violation<br/>status = OPEN, no fine"]
+    C5[/"Enter fine amount and due date"/]
+    C6[("Save violation<br/>status = OPEN with fine")]
+    C7["NOTIFY: household sees a red alert on /app/dashboard"]
+    C8{"Admin action on an OPEN notice"}
+    C9[("status = RESOLVED")]
+    C10[("status = DISMISSED")]
+    C11["Write audit log entry"]
+    C12(["End"])
+  end
+
+  subgraph HOME["Homeowner (/app/violations)"]
+    H1["Dashboard flags the violation in red"]
+    H2[/"Open /app/violations and read the notice"/]
+    H3{"Fine payable in the app?"}
+    H4[/"No in-app payment for fines yet -<br/>settle at the association office"/]
+    H5(["End"])
+  end
+
+  C1 --> C2 --> C3
+  C3 -->|Warning| C4 --> C7
+  C3 -->|Payment required| C5 --> C6 --> C7
+  C7 --> H1
+  H1 --> H2 --> H3
+  H3 -->|No| H4 --> H5
+  H3 -->|Yes, dues only| H5
+
+  C7 -.-> C8
+  C8 -->|Resolved| C9 --> C11
+  C8 -->|Dismissed| C10 --> C11
+  C11 --> C12

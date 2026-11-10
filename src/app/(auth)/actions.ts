@@ -7,7 +7,13 @@ import { createSession, destroySession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(254),
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3)
+    .max(30)
+    .regex(/^[a-z0-9._-]+$/),
   password: z.string().min(1).max(200),
 });
 
@@ -17,24 +23,24 @@ function loginError(message: string): never {
 
 export async function loginAction(formData: FormData) {
   const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
+    username: formData.get("username"),
     password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    loginError("Enter a valid email address and password.");
+    loginError("Enter your username and password.");
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: parsed.data.email },
+    where: { username: parsed.data.username },
   });
 
-  if (!user || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
-    loginError("Incorrect email or password.");
+  if (!user) {
+    loginError("Incorrect username or password.");
   }
 
-  if (user.status === "PENDING") {
-    loginError("This account is still waiting for confirmation.");
+  if (!(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
+    loginError("Incorrect username or password.");
   }
 
   if (user.status === "DISABLED") {

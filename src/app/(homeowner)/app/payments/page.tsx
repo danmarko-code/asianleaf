@@ -68,7 +68,7 @@ export default async function HomeownerPaymentsPage({
       },
     }),
     prisma.paymentChannel.findMany({
-      where: { isActive: true },
+      where: { isActive: true, type: "GCASH" },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
     prisma.payment.findMany({

@@ -9,6 +9,22 @@ import {
 
 export const CONTACT_NUMBER_PATTERN = /^\d{11}$/;
 
+// Person names accept letters and single spaces only: no digits, punctuation
+// or symbols. At least two letters are required, so a single-letter entry or a
+// blank field is rejected.
+export const NAME_PATTERN = /^[A-Za-zÑñ]+(?: [A-Za-zÑñ]+)*$/;
+
+export const NAME_MIN_LETTERS = 2;
+
+export const NAME_ERROR =
+  "Only letters are required. Numbers and special characters are not allowed.";
+
+export function isValidPersonName(value: string) {
+  const cleaned = value.trim().replace(/\s+/g, " ");
+  if (!NAME_PATTERN.test(cleaned)) return false;
+  return cleaned.replace(/ /g, "").length >= NAME_MIN_LETTERS;
+}
+
 // The street dropdown stores either a known street or the literal "Other",
 // with the typed value carried in customStreet.
 export const unitDetailsSchema = z
@@ -48,7 +64,7 @@ export const registrationPayloadSchema = z.object({
   householdMembers: z
     .array(
       z.object({
-        fullName: z.string().trim().min(2).max(120),
+        fullName: z.string().trim().min(1).max(120),
         relationship: z.string().trim().max(60).optional(),
       }),
     )
@@ -71,7 +87,7 @@ export const registrationPayloadSchema = z.object({
   kasambahay: z
     .array(
       z.object({
-        fullName: z.string().trim().min(2).max(120),
+        fullName: z.string().trim().min(1).max(120),
         // Optional only for requests submitted before contacts were required.
         contactNumber: z
           .string()
@@ -85,8 +101,5 @@ export const registrationPayloadSchema = z.object({
 
 export type RegistrationPayload = z.infer<typeof registrationPayloadSchema>;
 
-export function parseRegistrationPayload(value: unknown) {
-  return registrationPayloadSchema.safeParse(value);
-}
 
 export { OTHER_STREET };

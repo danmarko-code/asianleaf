@@ -79,7 +79,7 @@ export default async function AdminMemberDetailPage({
     include: {
       household: {
         include: {
-          account: { select: { email: true, status: true } },
+          account: { select: { username: true, email: true, status: true } },
           members: {
             orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
           },
@@ -728,7 +728,7 @@ export default async function AdminMemberDetailPage({
             <p className="font-medium text-ink">Portal login</p>
             <p className="text-muted">
               {household.account
-                ? `${household.account.email} · ${household.account.status}`
+                ? `Username: ${household.account.username} · ${household.account.email} · ${household.account.status}`
                 : "No login linked to this household."}
             </p>
           </div>

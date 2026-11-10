@@ -1,0 +1,134 @@
+%% Asian Leaf HOA - Chart 01
+%% Registration -> admin approval -> login
+%% Sheets: A1 applicant form | A2 server checks | B admin review | L login
+flowchart TD
+
+  subgraph SHEET_A1["Sheet A1 - Applicant (guest)"]
+    A1(["Start: visitor opens /register"])
+    A2[/"Enter first name, last name, email, 11-digit contact,<br/>password + confirm, street, block, lot, owner or tenant"/]
+    A3{"First name and last name:<br/>letters and spaces only, 2+ letters?"}
+    A4[/"Red box under the field - Only letters are required.<br/>Numbers and special characters are not allowed."/]
+    A5{"Email looks like name@domain.tld ?"}
+    A6[/"Red box - Enter a complete email, like name@example.com."/]
+    A7{"Contact number exactly 11 digits?"}
+    A8[/"Red box - Only numbers are allowed.<br/>or: Please enter the 11 digits of your mobile number."/]
+    A9{"Password 8+ chars, upper, lower, number,<br/>and matches the confirmation?"}
+    A10[/"Red box - password rule message<br/>or: The passwords do not match."/]
+    A11["Click Continue to household details"]
+    A12[/"Enter household members, pets, vehicles, kasambahay;<br/>tick the Data Privacy consent"/]
+    A13{"Consent ticked and household names valid?"}
+    A14[/"Message at the top of the form, return to step 2"/]
+    A15(("A2"))
+  end
+
+  subgraph SHEET_A2["Sheet A2 - Server validation and storage"]
+    S1["Re-validate every field on the server (zod)"]
+    S2{"Email already has an account?"}
+    S3[/"Reject - An account already uses this email"/]
+    S4{"Unit already registered?"}
+    S5[/"Reject - This unit is already registered"/]
+    S6{"A PENDING request already exists<br/>for this email or unit?"}
+    S7[/"Reject - already waiting for review"/]
+    S8["Hash the password with bcrypt"]
+    S9[("Save RegistrationRequest<br/>status = PENDING")]
+    S10[/"Show submitted confirmation - wait for admin approval"/]
+    S11(["End: no login exists yet"])
+  end
+
+  subgraph SHEET_B["Sheet B - Admin review (/admin/requests)"]
+    B1(["Start: admin opens /admin/requests"])
+    B2{"Request still PENDING?"}
+    B3[/"This request has already been reviewed"/]
+    B4{"Approve or reject?"}
+    B5[/"Enter rejection reason (3-300 characters)"/]
+    B6[("status = REJECTED<br/>save reason + reviewer")]
+    B7{"Email and unit still free,<br/>payload still valid?"}
+    B8[/"Show error, stay on the queue"/]
+    B9["TRANSACTION: create Household, Member, User ACTIVE,<br/>dependents, pets, vehicles, kasambahay"]
+    B10[("status = APPROVED<br/>link createdUserId")]
+    B11["NOTIFY: in-app notification REGISTRATION_APPROVED"]
+    B12[/"Show Registration approved"/]
+    B13[/"Show Registration rejected - applicant may resubmit"/]
+    B14(["End"])
+  end
+
+  subgraph SHEET_L["Sheet L - Login (/login)"]
+    L1(["Start: user opens /login"])
+    L2[/"Enter email + password"/]
+    L3{"Formats valid?"}
+    L4[/"Enter a valid email address and password"/]
+    L5{"User account exists for this email?"}
+    L6{"PENDING registration for this email?"}
+    L7[/"Your registration is still pending.<br/>The admin must approve it first, so please wait patiently."/]
+    L8{"REJECTED registration for this email?"}
+    L9[/"Your registration was not approved.<br/>Please register again or contact the association office."/]
+    L10[/"This email is not registered yet.<br/>Please register your household first."/]
+    L11{"Password correct?"}
+    L12[/"Incorrect email or password"/]
+    L13{"Account status?"}
+    L13a[/"This account has been disabled.<br/>Contact the association office."/]
+    L15[("Create session:<br/>random token, SHA-256 hash, 14-day expiry")]
+    L16["Set httpOnly cookie asialeaf_session"]
+    L17{"Role?"}
+    L18["Redirect /admin/dashboard"]
+    L19["Redirect /app/dashboard"]
+    L20(["End: signed in"])
+    L14(("L1"))
+  end
+
+  %% ---- applicant form ----
+  A1 --> A2 --> A3
+  A3 -->|No| A4 --> A2
+  A3 -->|Yes| A5
+  A5 -->|No| A6 --> A2
+  A5 -->|Yes| A7
+  A7 -->|No| A8 --> A2
+  A7 -->|Yes| A9
+  A9 -->|No| A10 --> A2
+  A9 -->|Yes| A11 --> A12 --> A13
+  A13 -->|No| A14 --> A12
+  A13 -->|Yes| A15
+
+  %% ---- server ----
+  A15 -.-> S1
+  S1 --> S2
+  S2 -->|Yes| S3
+  S2 -->|No| S4
+  S4 -->|Yes| S5
+  S4 -->|No| S6
+  S6 -->|Yes| S7
+  S6 -->|No| S8 --> S9 --> S10 --> S11
+  S3 -.-> A2
+  S5 -.-> A2
+  S7 -.-> A2
+
+  %% ---- admin review ----
+  S11 -.-> B1
+  B1 --> B2
+  B2 -->|No| B3 --> B14
+  B2 -->|Yes| B4
+  B4 -->|Reject| B5 --> B6 --> B13 --> B14
+  B4 -->|Approve| B7
+  B7 -->|No| B8 --> B2
+  B7 -->|Yes| B9 --> B10 --> B11 --> B12 --> B14
+
+  %% ---- login ----
+  B14 -.->|account now active| L1
+  A1 -.->|tries to sign in before approval| L1
+  L1 --> L2 --> L3
+  L3 -->|No| L4 --> L2
+  L3 -->|Yes| L5
+  L5 -->|No| L6
+  L5 -->|Yes| L11
+  L6 -->|Yes| L7 --> L14
+  L6 -->|No| L8
+  L8 -->|Yes| L9 --> L14
+  L8 -->|No| L10 --> L14
+  L11 -->|No| L12 --> L14
+  L11 -->|Yes| L13
+  L13 -->|PENDING| L7
+  L13 -->|DISABLED| L13a --> L14
+  L13 -->|ACTIVE| L15 --> L16 --> L17
+  L17 -->|ADMIN| L18 --> L20
+  L17 -->|HOMEOWNER| L19 --> L20
+  L14 -.-> L1

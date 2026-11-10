@@ -1,0 +1,86 @@
+%% Asian Leaf HOA - Chart 02
+%% Dues generation -> GCash reference submission -> treasurer verification
+%% Plus the reminder job in its own subgraph.
+flowchart TD
+
+  subgraph GEN["Admin - generate dues (/admin/dues)"]
+    D1(["Start: admin opens /admin/dues"])
+    D2[/"Choose billing month YYYY-MM"/]
+    D3{{"periodStart = 1st of month<br/>dueDate = 5th of month"}}
+    D4[("Create one Due per household, PHP 1500<br/>skip households that already have one")]
+    D5{"Any new rows created?"}
+    D6[/"Generated N dues + audit log entry"/]
+    D7[/"Dues for this month were already generated"/]
+    D8(["End"])
+  end
+
+  subgraph PAY["Homeowner - submit payment (/app/payments)"]
+    P1(["Start: homeowner opens /app/payments"])
+    P2{"Is there an open due?<br/>UNPAID or PARTIALLY_PAID"}
+    P3[/"No open balance - show payment history only"/]
+    P4[/"Scan the HOA GCash QR, enter amount,<br/>reference number, payment date, channel"/]
+    P5{"Amount within the remaining balance?"}
+    P6[/"Amount cannot be more than the remaining balance"/]
+    P7{"Reference number not used before?"}
+    P8[/"That reference number was already submitted"/]
+    P9[("Save Payment<br/>status = PENDING")]
+    P10[/"Submitted - waiting for treasurer verification"/]
+    P12(["End"])
+  end
+
+  subgraph VER["Treasurer - verify (/admin/payments)"]
+    V1(["Start: treasurer opens /admin/payments"])
+    V2{"Payment still PENDING?"}
+    V3[/"Only pending payments can be reviewed"/]
+    V4{"Approve or reject?"}
+    V5["Payment = PAID<br/>generate receipt RCPT-YYYY-XXXXXX"]
+    V6[("Recompute the Due:<br/>PAID if fully covered, else PARTIALLY_PAID")]
+    V7["NOTIFY: payment approved + receipt, plus audit log"]
+    V8[/"Enter rejection reason (3-300 characters)"/]
+    V9[("Payment = REJECTED<br/>Due status unchanged")]
+    V10["NOTIFY: payment not verified, plus audit log"]
+    V11(["End"])
+  end
+
+  subgraph REM["System - reminder job (/api/cron/reminders or admin button)"]
+    R1(["Start: cron fires or admin clicks Send reminders"])
+    R2["Find dues UNPAID or PARTIALLY_PAID<br/>with dueDate <= today + 30 days"]
+    R3{"Balance still greater than zero?"}
+    R4{{"Bucket by days left:<br/>OVERDUE / 1 day / 1 week / 1 month"}}
+    R5{"Same reminder already logged?"}
+    R6[("Write ReminderLog<br/>+ in-app notification")]
+    R7["NOTIFY: email / SMS (currently console stub)"]
+    R8(["End"])
+  end
+
+  %% generation
+  D1 --> D2 --> D3 --> D4 --> D5
+  D5 -->|Yes| D6 --> D8
+  D5 -->|No| D7 --> D8
+
+  %% submission
+  D8 -.->|dues exist| P1
+  P1 --> P2
+  P2 -->|No| P3 --> P12
+  P2 -->|Yes| P4 --> P5
+  P5 -->|No| P6 --> P4
+  P5 -->|Yes| P7
+  P7 -->|No| P8 --> P4
+  P7 -->|Yes| P9 --> P10
+
+  %% verification
+  P10 -.-> V1
+  V1 --> V2
+  V2 -->|No| V3 --> V11
+  V2 -->|Yes| V4
+  V4 -->|Approve| V5 --> V6 --> V7 --> V11
+  V4 -->|Reject| V8 --> V9 --> V10 --> V11
+  V10 -.->|homeowner may resubmit| P4
+
+  %% reminders (runs in parallel)
+  D8 -.->|daily| R1
+  R1 --> R2 --> R3
+  R3 -->|No| R8
+  R3 -->|Yes| R4 --> R5
+  R5 -->|Yes| R8
+  R5 -->|No| R6 --> R7 --> R8

@@ -167,6 +167,7 @@ async function main() {
   const users = [
     {
       id: "usr_admin",
+      username: "admin",
       email: "admin@asialeaf.test",
       role: "ADMIN" as const,
       householdId: null,
@@ -174,6 +175,7 @@ async function main() {
     },
     {
       id: "usr_treasurer",
+      username: "treasurer",
       email: "treasurer@asialeaf.test",
       role: "ADMIN" as const,
       householdId: null,
@@ -181,6 +183,7 @@ async function main() {
     },
     {
       id: "usr_maria",
+      username: "maria.santos",
       email: "maria.santos@example.test",
       role: "HOMEOWNER" as const,
       householdId: "hh_001",
@@ -188,6 +191,7 @@ async function main() {
     },
     {
       id: "usr_jose",
+      username: "jose.reyes",
       email: "jose.reyes@example.test",
       role: "HOMEOWNER" as const,
       householdId: "hh_002",
@@ -195,6 +199,7 @@ async function main() {
     },
     {
       id: "usr_ana",
+      username: "ana.delacruz",
       email: "ana.delacruz@example.test",
       role: "HOMEOWNER" as const,
       householdId: "hh_003",
@@ -202,6 +207,7 @@ async function main() {
     },
     {
       id: "usr_pedro",
+      username: "pedro.lim",
       email: "pedro.lim@example.test",
       role: "HOMEOWNER" as const,
       householdId: "hh_004",
@@ -214,6 +220,7 @@ async function main() {
       where: { email: user.email },
       update: {
         id: user.id,
+        username: user.username,
         passwordHash,
         role: user.role,
         status: "ACTIVE",
@@ -294,89 +301,6 @@ async function main() {
       create: occupant,
     });
   }
-
-  // ---------- Registration requests ----------
-  const carloPayload = {
-    occupancyType: "OWNER_OCCUPIED",
-    kasambahay: [
-      { fullName: "Beth Mendoza", contactNumber: "09171000013" },
-    ],
-    pets: [{ name: "Coco", breed: "Poodle" }],
-    vehicles: [{ plateNumber: "XYZ 9012" }],
-    householdMembers: [
-      { fullName: "Elena Mendoza", relationship: "Spouse" },
-    ],
-  };
-
-  await prisma.registrationRequest.upsert({
-    where: { id: "req_001" },
-    update: {
-      payload: carloPayload,
-      unitAddress: "Blk 2 Lot 14, Sampaguita St.",
-
-      street: "Sampaguita St.",
-      block: "2",
-      lot: "14",
-    },
-    create: {
-      id: "req_001",
-      firstName: "Carlo",
-      lastName: "Mendoza",
-      email: "carlo.mendoza@example.test",
-      contactNumber: "09171000007",
-      unitAddress: "Blk 2 Lot 14, Sampaguita St.",
-
-      street: "Sampaguita St.",
-      block: "2",
-      lot: "14",
-      passwordHash: hashSync("Carlo2026", 12),
-      consentVersion: CONSENT_VERSION,
-      consentAt: monthDate(0, 20),
-      payload: carloPayload,
-    },
-  });
-
-  const gracePayload = {
-    occupancyType: "TENANT",
-    kasambahay: [],
-    pets: [
-      { name: "Milo", breed: "Aspin" },
-      { name: "Tofu", breed: "Puspin" },
-    ],
-    vehicles: [{ plateNumber: "QRS 3456" }],
-    householdMembers: [
-      { fullName: "Mark Villanueva", relationship: "Spouse" },
-      { fullName: "Mia Villanueva", relationship: "Daughter" },
-    ],
-  };
-
-  await prisma.registrationRequest.upsert({
-    where: { id: "req_002" },
-    update: {
-      payload: gracePayload,
-      unitAddress: "Blk 4 Lot 9, Narra St.",
-
-      street: "Narra St.",
-      block: "4",
-      lot: "9",
-    },
-    create: {
-      id: "req_002",
-      firstName: "Grace",
-      lastName: "Villanueva",
-      email: "grace.villanueva@example.test",
-      contactNumber: "09171000008",
-      unitAddress: "Blk 4 Lot 9, Narra St.",
-
-      street: "Narra St.",
-      block: "4",
-      lot: "9",
-      passwordHash: hashSync("Grace2026", 12),
-      consentVersion: CONSENT_VERSION,
-      consentAt: monthDate(0, 24),
-      payload: gracePayload,
-    },
-  });
 
   // ---------- Dues ----------
   // Each row is one household's monthly obligation. A due remains open until
@@ -558,10 +482,6 @@ async function main() {
       create: payment,
     });
   }
-
-  // Remove the old bank channel from earlier seed runs after its payments have
-  // been moved to GCash.
-  await prisma.paymentChannel.deleteMany({ where: { id: "ch_bank" } });
 
   // Previous-month payments, kept simple so the dashboard has history.
   const previousDues = await prisma.due.findMany({
@@ -809,14 +729,13 @@ async function main() {
     paymentChannels: await prisma.paymentChannel.count(),
     violations: await prisma.violation.count(),
     budgetEntries: await prisma.budgetEntry.count(),
-    registrationRequests: await prisma.registrationRequest.count(),
     feedback: await prisma.feedback.count(),
   };
 
   console.log("\nSeed complete.");
-  console.log("Admin: admin@asialeaf.test / " + DEMO_PASSWORD);
-  console.log("Treasurer: treasurer@asialeaf.test / " + DEMO_PASSWORD);
-  console.log("Homeowner: maria.santos@example.test / " + DEMO_PASSWORD);
+  console.log("Admin: admin / " + DEMO_PASSWORD);
+  console.log("Treasurer: treasurer / " + DEMO_PASSWORD);
+  console.log("Homeowner: maria.santos / " + DEMO_PASSWORD);
   console.log(counts);
 }
 

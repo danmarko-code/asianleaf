@@ -143,6 +143,11 @@ export default async function AdminMembersPage({
         eyebrow="Records"
         title="Members"
         description="Search household records by resident, contact details, street or block."
+        actions={
+          <Link href="/admin/members/new" className={buttonStyles({ size: "sm" })}>
+            Add member
+          </Link>
+        }
       />
 
       <Card>

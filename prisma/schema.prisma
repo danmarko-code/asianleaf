@@ -30,12 +30,6 @@ enum MemberStatus {
   INACTIVE
 }
 
-enum RequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 enum DueStatus {
   UNPAID
   PARTIALLY_PAID
@@ -46,6 +40,8 @@ enum DueStatus {
 enum PaymentMethod {
   GCASH
   BANK_TRANSFER
+  EWALLET
+  CASH
 }
 
 enum PaymentStatus {
@@ -57,6 +53,8 @@ enum PaymentStatus {
 enum PaymentChannelType {
   GCASH
   BANK_TRANSFER
+  EWALLET
+  CASH
 }
 
 // Admins choose whether a violation is only a warning or requires a payment.
@@ -110,6 +108,7 @@ enum FeedbackStatus {
 
 model User {
   id           String     @id @default(cuid())
+  username     String     @unique
   email        String     @unique
   passwordHash String
   role         Role       @default(HOMEOWNER)
@@ -126,8 +125,6 @@ model User {
   notifications    Notification[]
   feedback         Feedback[]
   auditLogs        AuditLog[]            @relation("ActorAuditLogs")
-  reviewedRequests RegistrationRequest[] @relation("RequestReviewer")
-  createdRequest   RegistrationRequest?  @relation("RequestCreatedUser")
   budgetEntries    BudgetEntry[]
   reviewedPayments Payment[]             @relation("PaymentReviewer")
   issuedViolations Violation[]           @relation("ViolationIssuer")
@@ -244,37 +241,6 @@ model HouseholdMember {
   createdAt    DateTime @default(now())
 
   @@index([memberId])
-}
-
-// Step-2 answers are stored as validated JSON until an admin approves the
-// request. Approval then creates the household, member, dependents and login
-// in one transaction.
-model RegistrationRequest {
-  id              String        @id @default(cuid())
-  firstName       String
-  lastName        String
-  email           String
-  contactNumber   String
-  unitAddress     String
-  street          String?
-  block           String?
-  lot             String?
-  payload         Json
-  passwordHash    String?
-  consentVersion  String
-  consentAt       DateTime
-  status          RequestStatus @default(PENDING)
-  rejectionReason String?
-  reviewedById    String?
-  reviewedBy      User?         @relation("RequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
-  reviewedAt      DateTime?
-  createdUserId   String?       @unique
-  createdUser     User?         @relation("RequestCreatedUser", fields: [createdUserId], references: [id], onDelete: SetNull)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@index([status])
-  @@index([email])
 }
 
 model Due {

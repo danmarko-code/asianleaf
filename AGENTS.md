@@ -45,53 +45,47 @@ npm run db:studio
   block, occupancy, status.
 - **Dark mode:** persisted theme toggle in auth/admin/homeowner headers and design
   guide; system preference on first visit.
-- **Phase 2 registration:**
-  - `/register` two-step form: account/unit, owner/tenant occupancy, household
-    members with relationship dropdown, kasambahay with 11-digit contacts, pets,
-    vehicles, Data Privacy consent.
+- **Login and accounts:**
+  - Sign-in uses a unique `User.username` plus password. Email is not collected
+    when a member is created; a username-based placeholder is stored and can be
+    replaced later.
   - Contact numbers are exactly 11 digits. Passwords need at least 8 characters,
-    upper and lowercase letters, and a number; the form shows live checks.
-  - No block/lot fields and no pet/vehicle count fields in registration.
-  - Password hashed; request stored `PENDING`; no login until approval.
-  - Duplicate email/unit/pending-request protection; errors preserve entered data
-    and return to the correct step.
-  - `/admin/requests` shows full details and approve/reject controls.
-  - Approval transaction creates household, member, occupants, pets, vehicles,
-    kasambahay, login, and in-app notification.
-  - Rejection stores a reason; applicant can resubmit.
-- Seed updated for registration payloads; README updated.
+    upper and lowercase letters, and a number; forms show live checks.
+- **Admin member creation:**
+  - `/admin/members/new` creates a household, primary resident, dependents,
+    kasambahay, pets, vehicles and the homeowner login in one transaction.
+  - Username, contact number and unit must be unique.
+  - Required fields show a red asterisk. Validation errors render under the field
+    with a red border and the first invalid field is scrolled into view.
+  - The account is `ACTIVE` immediately and receives an in-app welcome notice.
+- **Member records:** `/admin/members/[id]` has tabs for overview, household,
+  kasambahay, pets, vehicles and violations, with add/edit/remove forms.
+- Seed creates usernames for every login; README updated.
 
 ## Validation already done
 - `npm run db:seed` is idempotent; seed data: users 6, households 5, members 6,
   dues 15, payments 10, paymentChannels 1, violations 3, budgetEntries 6,
-  registrationRequests 2, feedback 3. The live DB currently has one additional
-  pending request submitted through the app, so the total count is 3.
-- Registration success, duplicate rejection with field preservation, admin
-  approval, rejection, approved-user login, member filters, theme toggle.
+  feedback 3.
+- Username login, admin-created member with login, duplicate rejection, member
+  filters, theme toggle.
 - `npm run lint`, `npm run typecheck`, `npm run build` pass. Stop the dev server
   before building; a running dev server can corrupt `.next` and trigger
   `/_not-found` invariant errors.
-- Two pending seeded requests remain plus one pending app-submitted request.
-- Latest migrations: `20261029013000_kasambahay_contact_number` and
+- Latest migrations:
+  `20261111000000_payment_methods`,
+  `20261110000000_username_login_remove_requests`,
   `20261029014500_restrict_occupancy_types`.
 
 ## Next phase
-Complete Phase 3 member records:
-- Household/member detail page with tabs.
-- Add/edit forms for member, dependents, pets, vehicles, kasambahay.
-- Link from `/admin/members`.
-Then later phases: dues generation, reminders, budget entry, feedback submission,
-OTP/password reset, email/SMS delivery, audit logs.
+Remaining work: outbound email/SMS delivery, official GCash QR asset, and any
+further reporting/reminder polish.
 
 ## Known gaps / notes
 - Official GCash QR image is not supplied; UI shows “QR image pending.”
-- No audit-log writes for approvals/violations yet.
-- No outbound email/SMS; approval notification is in-app only.
-- Budget entry, feedback submission, password reset/OTP, dues generation and
-  reminders still need work.
+- No outbound email/SMS; member-account notice and other notifications are in-app
+  only.
 - `next.config.ts` has `devIndicators: false` because the dev badge overlapped
   the theme toggle.
-- Test accounts use password `Leaf2026!`: `admin@asialeaf.test`,
-  `treasurer@asialeaf.test`, `maria.santos@example.test`,
-  `jose.reyes@example.test`, `ana.delacruz@example.test`,
-  `pedro.lim@example.test`.
+- Test accounts use password `Leaf2026!`: usernames `admin`, `treasurer`,
+  `maria.santos`, `jose.reyes`, `ana.delacruz`, `pedro.lim`. Emails keep the
+  `@asialeaf.test` / `@example.test` addresses.

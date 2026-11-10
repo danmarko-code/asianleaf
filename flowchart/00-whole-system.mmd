@@ -1,0 +1,116 @@
+%% Asian Leaf HOA - Whole system flowchart (single diagram)
+%% Covers: registration, admin approval, login, dues, payment verification,
+%% reminders, violations, budget and feedback in one picture.
+flowchart TD
+
+  subgraph GUEST["1. Guest / Applicant"]
+    GA(["Start: visitor opens the site"])
+    GB{"Has an active account?"}
+    GC[/"Fill in the registration form:<br/>name, email, 11-digit contact, password,<br/>street, block, lot, owner or tenant"/]
+    GD{"All fields valid?"}
+    GE[/"Red box under the field with the exact rule,<br/>e.g. Only numbers are allowed."/]
+    GF[/"Step 2: household members, pets, vehicles,<br/>kasambahay, Data Privacy consent"/]
+    GG["Submit the request"]
+    GH(["End: waits for admin approval"])
+  end
+
+  subgraph SYSTEM["2. System - Next.js server + PostgreSQL"]
+    SA{"Duplicate email, unit,<br/>or pending request?"}
+    SB[/"Reject with the matching message"/]
+    SC["Hash the password with bcrypt"]
+    SD[("RegistrationRequest<br/>status = PENDING")]
+    SE(["Login page"])
+    SF{"Email belongs to a user?"}
+    SG{"Pending or rejected request<br/>for this email?"}
+    SH[/"Pending, rejected, or not-registered message"/]
+    SI{"Password correct and status ACTIVE?"}
+    SJ[/"Incorrect email or password"/]
+    SK[("Session row<br/>+ httpOnly cookie")]
+    SL{"Role?"}
+  end
+
+  subgraph ADMIN["3. Admin / Treasurer"]
+    AA(["Admin dashboard"])
+    AB{"Approve the request?"}
+    AC["Create Household, Member, User ACTIVE,<br/>dependents, pets, vehicles, kasambahay"]
+    AD[("status = APPROVED<br/>+ in-app notification")]
+    AE[("status = REJECTED<br/>+ reason saved")]
+    AF["Generate the monthly dues<br/>PHP 1,500 per household"]
+    AG["Send reminders<br/>daily cron or manual button"]
+    AH{"Verify the GCash payment?"}
+    AI["Payment = PAID<br/>receipt RCPT-YYYY-XXXXXX"]
+    AJ[("Recompute the Due<br/>PAID or PARTIALLY_PAID")]
+    AK[("Payment = REJECTED<br/>reason saved")]
+    AL["Issue a violation:<br/>warning or payment required"]
+    AM["Post a budget entry:<br/>income or expense"]
+    AN["Reply to feedback"]
+  end
+
+  subgraph HOME["4. Homeowner"]
+    HA(["Homeowner dashboard"])
+    HB{"Open balance?"}
+    HC[/"No open balance - payment history only"/]
+    HD[/"Scan the GCash QR, enter amount,<br/>reference number, date, channel"/]
+    HE{"Amount within balance<br/>and reference unused?"}
+    HF[/"Amount too high,<br/>or reference already submitted"/]
+    HG[("Payment PENDING<br/>waiting for verification")]
+    HH["Violations shown in red"]
+    HI["Budget shown read-only"]
+    HJ["Send feedback"]
+    HK(["End: sign out"])
+  end
+
+  %% ---- registration ----
+  GA --> GB
+  GB -->|No| GC --> GD
+  GD -->|No| GE --> GC
+  GD -->|Yes| GF --> GG --> SA
+  SA -->|Yes| SB --> GC
+  SA -->|No| SC --> SD --> GH
+
+  %% ---- admin approval ----
+  GH -.->|admin opens the queue| AA
+  AA --> AB
+  AB -->|Approve| AC --> AD
+  AB -->|Reject| AE
+  AD -.->|account is now active| SE
+  AE -.->|applicant may resubmit| GC
+
+  %% ---- login ----
+  GB -->|Yes| SE
+  SE --> SF
+  SF -->|No| SG
+  SF -->|Yes| SI
+  SG -->|Yes| SH --> SE
+  SG -->|No| SH
+  SI -->|No| SJ --> SE
+  SI -->|Yes| SK --> SL
+  SL -->|ADMIN| AA
+  SL -->|HOMEOWNER| HA
+
+  %% ---- admin modules ----
+  AA --> AF --> AG
+  AA --> AH
+  AH -->|Approve| AI --> AJ
+  AH -->|Reject| AK --> HD
+  AA --> AL
+  AA --> AM
+  AA --> AN
+
+  %% ---- homeowner modules ----
+  HA --> HB
+  HB -->|No| HC --> HK
+  HB -->|Yes| HD --> HE
+  HE -->|No| HF --> HD
+  HE -->|Yes| HG
+  HA --> HH
+  HA --> HI
+  HA --> HJ --> AN
+
+  %% ---- cross-lane results ----
+  HG -.->|treasurer reviews| AH
+  AJ -.->|balance updated| HB
+  AL -.->|red alert on the dashboard| HH
+  AM -.->|visible to residents| HI
+  HH --> HK
+  HI --> HK
