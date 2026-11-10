@@ -1,6 +1,6 @@
 import type { ReminderKind } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { sendMessage } from "@/lib/messaging";
+import { sendSms } from "@/lib/messaging";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -27,14 +27,14 @@ export async function runDueReminders() {
 
   const dues = await prisma.due.findMany({
     where: {
-      status: { in: ["UNPAID", "PARTIALLY_PAID"] },
+      status: "UNPAID",
       dueDate: { lte: new Date(now.getTime() + 30 * DAY_MS) },
     },
     include: {
       household: {
         include: {
           members: { take: 1, orderBy: { createdAt: "asc" } },
-          account: { select: { id: true, email: true, status: true } },
+          account: { select: { id: true, status: true } },
         },
       },
       payments: { where: { status: "PAID" }, select: { amount: true } },
@@ -90,12 +90,10 @@ export async function runDueReminders() {
 
     const member = due.household.members[0];
     if (member) {
-      await sendMessage({
-        to: member.email,
-        subject:
-          kind === "OVERDUE" ? "Overdue HOA dues" : "Upcoming HOA dues reminder",
-        body: `${due.household.unitAddress}: PHP ${balance.toFixed(2)} remains for the billing period starting ${due.periodStart.toISOString().slice(0, 10)}.`,
-      });
+      await sendSms(
+        member.contactNumber,
+        `${due.household.unitAddress}: PHP ${balance.toFixed(2)} remains for the billing period starting ${due.periodStart.toISOString().slice(0, 10)}.`,
+      );
     }
 
     sent += 1;

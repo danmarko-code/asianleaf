@@ -157,7 +157,7 @@ export default async function AdminViolationsPage({
                       <Td>
                         {formatDate(violation.issuedAt)}
                         <p className="mt-0.5 text-xs text-muted">
-                          by {violation.issuedBy?.email ?? "system"}
+                          by {violation.issuedBy?.username ?? "system"}
                         </p>
                       </Td>
                       <Td>

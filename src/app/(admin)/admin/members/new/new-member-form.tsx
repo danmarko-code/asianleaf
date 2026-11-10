@@ -15,16 +15,20 @@ import {
 import { Input, PasswordInput, Select } from "@/components/ui/form";
 import { CheckIcon } from "@/components/icons";
 import { composeUnitAddress, OTHER_STREET, STREETS } from "@/lib/locations";
+import {
+  isValidContactNumber,
+  isValidPersonName,
+  NAME_ERROR,
+  NAME_INPUT_PATTERN,
+} from "@/lib/registration";
 
 type Person = { fullName: string; relationship: string };
 type Pet = { name: string; breed: string };
 type Vehicle = { plateNumber: string };
 type Kasambahay = { fullName: string; contactNumber: string };
 
-const NAME_INPUT_PATTERN = /[\sA-Za-zÑñ]*[A-Za-zÑñ]{2,}[\sA-Za-zÑñ]*/;
 const NAME_INPUT_TITLE =
-  "Use letters and spaces only. Numbers and special characters are not allowed.";
-const REQUIRED_NAME_PATTERN = "^[A-Za-zÑñ]+(?: [A-Za-zÑñ]+)*$";
+  "Use letters, spaces, hyphens, apostrophes or periods only. At least 2 letters.";
 
 function invalidFieldMessage(field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
   if (field.validity.valueMissing) return "This field is required.";
@@ -66,6 +70,13 @@ export function NewMemberForm() {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [kasambahayErrors, setKasambahayErrors] = useState<
+    Record<number, string>
+  >({});
 
   const [unit, setUnit] = useState({
     street: STREETS[0] as string,
@@ -89,6 +100,18 @@ export function NewMemberForm() {
   ];
   const passwordMeetsRequirements = passwordChecks.every((check) => check.met);
   const passwordsMatch = confirmPassword === password;
+
+  const firstNameError =
+    fieldErrors.firstName ??
+    (touched.firstName && !isValidPersonName(firstName) ? NAME_ERROR : undefined);
+  const lastNameError =
+    fieldErrors.lastName ??
+    (touched.lastName && !isValidPersonName(lastName) ? NAME_ERROR : undefined);
+  const contactError =
+    fieldErrors.contactNumber ??
+    (touched.contactNumber && !isValidContactNumber(contactNumber)
+      ? "Enter an 11-digit contact number."
+      : undefined);
 
   const previewStreet =
     unit.street === OTHER_STREET ? unit.customStreet.trim() : unit.street;
@@ -194,6 +217,29 @@ export function NewMemberForm() {
     if (!passwordsMatch) {
       nextErrors.confirmPassword = "The passwords do not match.";
     }
+
+    if (!isValidPersonName(firstName)) nextErrors.firstName = NAME_ERROR;
+    if (!isValidPersonName(lastName)) nextErrors.lastName = NAME_ERROR;
+    if (!isValidContactNumber(contactNumber)) {
+      nextErrors.contactNumber = "Enter an 11-digit contact number.";
+    }
+
+    const nextKasambahayErrors: Record<number, string> = {};
+    kasambahay.forEach((row, index) => {
+      if (!isValidPersonName(row.fullName)) {
+        nextKasambahayErrors[index] = NAME_ERROR;
+      } else if (
+        row.contactNumber.trim() &&
+        !isValidContactNumber(row.contactNumber)
+      ) {
+        nextKasambahayErrors[index] =
+          "Enter an 11-digit contact number or leave it blank.";
+      }
+    });
+    if (Object.keys(nextKasambahayErrors).length > 0) {
+      nextErrors.kasambahay = "Check the kasambahay details.";
+    }
+    setKasambahayErrors(nextKasambahayErrors);
 
     if (Object.keys(nextErrors).length > 0) {
       shouldFocusError.current = true;
@@ -322,10 +368,14 @@ export function NewMemberForm() {
               autoComplete="given-name"
               required
               maxLength={60}
-              pattern={REQUIRED_NAME_PATTERN}
+              pattern={NAME_INPUT_PATTERN}
               title={NAME_INPUT_TITLE}
-              hint="Letters and spaces only."
-              error={fieldErrors.firstName}
+              hint="Letters, spaces, hyphens, apostrophes or periods only."
+              error={firstNameError}
+              value={firstName}
+              nameOnly
+              onChange={(event) => setFirstName(event.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}
             />
             <Input
               label="Last name"
@@ -333,10 +383,14 @@ export function NewMemberForm() {
               autoComplete="family-name"
               required
               maxLength={60}
-              pattern={REQUIRED_NAME_PATTERN}
+              pattern={NAME_INPUT_PATTERN}
               title={NAME_INPUT_TITLE}
-              hint="Letters and spaces only."
-              error={fieldErrors.lastName}
+              hint="Letters, spaces, hyphens, apostrophes or periods only."
+              error={lastNameError}
+              value={lastName}
+              nameOnly
+              onChange={(event) => setLastName(event.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, lastName: true }))}
             />
           </div>
 
@@ -353,7 +407,11 @@ export function NewMemberForm() {
               pattern="[0-9]{11}"
               placeholder="09171234567"
               hint="11-digit mobile number used for due reminders."
-              error={fieldErrors.contactNumber}
+              error={contactError}
+              value={contactNumber}
+              onlyDigits
+              onChange={(event) => setContactNumber(event.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, contactNumber: true }))}
             />
 
             <Select
@@ -497,8 +555,9 @@ export function NewMemberForm() {
                     )
                   }
                   maxLength={120}
-                  pattern={NAME_INPUT_PATTERN.source}
+                  pattern={NAME_INPUT_PATTERN}
                   title={NAME_INPUT_TITLE}
+                  nameOnly
                 />
                 <Select
                   label="Relationship"
@@ -570,19 +629,21 @@ export function NewMemberForm() {
                     )
                   }
                   maxLength={120}
-                  pattern={NAME_INPUT_PATTERN.source}
+                  pattern={NAME_INPUT_PATTERN}
                   title={NAME_INPUT_TITLE}
+                  nameOnly
+                  error={kasambahayErrors[index]}
                 />
                 <Input
                   label="Contact number"
                   type="tel"
                   inputMode="numeric"
-                  required
-                  minLength={11}
                   maxLength={11}
                   pattern="[0-9]{11}"
-                  placeholder="09171234567"
+                  placeholder="Optional"
+                  hint="Optional"
                   value={row.contactNumber}
+                  onlyDigits
                   onChange={(event) =>
                     setKasambahay((rows) =>
                       rows.map((item, rowIndex) =>

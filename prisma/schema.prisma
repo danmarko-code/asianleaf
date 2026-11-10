@@ -32,7 +32,6 @@ enum MemberStatus {
 
 enum DueStatus {
   UNPAID
-  PARTIALLY_PAID
   PAID
   WAIVED
 }
@@ -91,15 +90,6 @@ enum ReminderKind {
   OVERDUE
 }
 
-enum OtpPurpose {
-  CHANGE_PASSWORD
-}
-
-enum OtpChannel {
-  SMS
-  EMAIL
-}
-
 enum FeedbackStatus {
   NEW
   READ
@@ -109,7 +99,6 @@ enum FeedbackStatus {
 model User {
   id           String     @id @default(cuid())
   username     String     @unique
-  email        String     @unique
   passwordHash String
   role         Role       @default(HOMEOWNER)
   status       UserStatus @default(ACTIVE)
@@ -121,7 +110,6 @@ model User {
   member      Member?    @relation(fields: [memberId], references: [id], onDelete: SetNull)
 
   sessions         Session[]
-  otpCodes         OtpCode[]
   notifications    Notification[]
   feedback         Feedback[]
   auditLogs        AuditLog[]            @relation("ActorAuditLogs")
@@ -177,7 +165,6 @@ model Member {
   firstName      String
   lastName       String
   contactNumber  String
-  email          String
   occupancyType  OccupancyType
   status         MemberStatus      @default(ACTIVE)
   consentVersion String?
@@ -193,7 +180,6 @@ model Member {
 
   @@index([householdId])
   @@index([lastName, firstName])
-  @@index([email])
   @@index([contactNumber])
 }
 
@@ -349,21 +335,6 @@ model Notification {
   createdAt DateTime         @default(now())
 
   @@index([userId, readAt])
-}
-
-model OtpCode {
-  id         String     @id @default(cuid())
-  userId     String
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  purpose    OtpPurpose
-  channel    OtpChannel
-  codeHash   String
-  expiresAt  DateTime
-  attempts   Int        @default(0)
-  consumedAt DateTime?
-  createdAt  DateTime   @default(now())
-
-  @@index([userId, purpose])
 }
 
 model Feedback {

@@ -9,20 +9,41 @@ import {
 
 export const CONTACT_NUMBER_PATTERN = /^\d{11}$/;
 
-// Person names accept letters and single spaces only: no digits, punctuation
-// or symbols. At least two letters are required, so a single-letter entry or a
-// blank field is rejected.
-export const NAME_PATTERN = /^[A-Za-zÑñ]+(?: [A-Za-zÑñ]+)*$/;
+// Person names accept letters, single spaces, hyphens, apostrophes and a
+// trailing period (for suffixes such as "Jr."). Digits and every other symbol
+// are rejected. At least two letters are required, so a single-letter entry or
+// a blank field is rejected.
+export const NAME_PATTERN = /^[A-Za-zÑñ][A-Za-zÑñ .'-]*[A-Za-zÑñ.]$/;
+
+// HTML `pattern` counterpart with a lookahead that requires two letters, so the
+// browser blocks submission before the server sees it.
+export const NAME_INPUT_PATTERN =
+  "(?=(?:[^A-Za-zÑñ]*[A-Za-zÑñ]){2})[A-Za-zÑñ][A-Za-zÑñ .'-]*";
 
 export const NAME_MIN_LETTERS = 2;
 
 export const NAME_ERROR =
-  "Only letters are required. Numbers and special characters are not allowed.";
+  "Use letters, spaces, hyphens, apostrophes or periods only. At least 2 letters are required.";
 
 export function isValidPersonName(value: string) {
   const cleaned = value.trim().replace(/\s+/g, " ");
+  if (cleaned.length < NAME_MIN_LETTERS) return false;
   if (!NAME_PATTERN.test(cleaned)) return false;
-  return cleaned.replace(/ /g, "").length >= NAME_MIN_LETTERS;
+  return (cleaned.match(/[A-Za-zÑñ]/g) ?? []).length >= NAME_MIN_LETTERS;
+}
+
+// Keeps only characters a person name may contain. Used by the client inputs so
+// digits cannot be typed at all.
+export function sanitizeNameInput(value: string) {
+  return value.replace(/[^A-Za-zÑñ .'-]/g, "");
+}
+
+export function sanitizeContactInput(value: string) {
+  return value.replace(/\D/g, "").slice(0, 11);
+}
+
+export function isValidContactNumber(value: string) {
+  return CONTACT_NUMBER_PATTERN.test(value.trim());
 }
 
 // The street dropdown stores either a known street or the literal "Other",

@@ -9,7 +9,7 @@ export default async function HomeownerLayout({
   return (
     <HomeownerShell
       user={{
-        email: user.email,
+        username: user.username,
         name: user.member?.firstName ?? "Homeowner",
         unit: user.household?.unitAddress ?? null,
       }}

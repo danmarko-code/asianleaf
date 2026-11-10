@@ -7,7 +7,7 @@ export default async function AdminLayout({
   const user = await requireRole("ADMIN");
 
   return (
-    <AdminShell user={{ email: user.email, name: user.member?.firstName ?? "Administrator" }}>
+    <AdminShell user={{ username: user.username, name: user.member?.firstName ?? "Administrator" }}>
       {children}
     </AdminShell>
   );

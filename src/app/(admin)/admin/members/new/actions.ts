@@ -196,11 +196,6 @@ export async function createMemberAction(
     return { error: "Each vehicle plate number can only be listed once." };
   }
 
-  // Email is no longer collected during member creation. Keep the database's
-  // required unique email in sync with the username; an admin can replace it
-  // later from the member record.
-  const email = `${parsed.data.username}@asialeaf.local`;
-
   const [usernameTaken, householdTaken, memberTaken] = await Promise.all([
     prisma.user.findUnique({
       where: { username: parsed.data.username },
@@ -271,7 +266,6 @@ export async function createMemberAction(
           householdId: household.id,
           firstName: parsed.data.firstName,
           lastName: parsed.data.lastName,
-          email,
           contactNumber: parsed.data.contactNumber,
           occupancyType: parsed.data.occupancyType,
           status: "ACTIVE",
@@ -283,7 +277,6 @@ export async function createMemberAction(
       const account = await tx.user.create({
         data: {
           username: parsed.data.username,
-          email,
           passwordHash,
           role: "HOMEOWNER",
           status: "ACTIVE",
@@ -362,7 +355,6 @@ export async function createMemberAction(
     entityId: memberId,
     metadata: {
       username: parsed.data.username,
-      email,
       unitAddress: unit.data.unitAddress,
     },
   });

@@ -79,7 +79,7 @@ export default async function HomeownerPaymentsPage({
   ]);
 
   const openDues = dues
-    .filter((due) => due.status === "UNPAID" || due.status === "PARTIALLY_PAID")
+    .filter((due) => due.status === "UNPAID")
     .map((due) => {
       const paid = due.payments.reduce(
         (total, payment) => total + Number(payment.amount),

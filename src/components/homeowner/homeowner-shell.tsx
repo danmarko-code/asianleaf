@@ -29,7 +29,7 @@ export function HomeownerShell({
   user,
 }: {
   children: ReactNode;
-  user: { name: string; email: string; unit: string | null };
+  user: { name: string; username: string; unit: string | null };
 }) {
   const pathname = usePathname();
 
@@ -73,7 +73,7 @@ export function HomeownerShell({
 
             <div className="hidden border-l border-line pl-3 text-right lg:block">
               <p className="text-sm font-medium text-ink">{user.name}</p>
-              <p className="text-[11px] text-muted">{user.unit ?? user.email}</p>
+              <p className="text-[11px] text-muted">{user.unit ?? user.username}</p>
             </div>
 
             <ThemeToggle />

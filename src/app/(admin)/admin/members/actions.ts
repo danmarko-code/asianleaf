@@ -1,5 +1,6 @@
 "use server";
 
+import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -12,11 +13,18 @@ import {
   HOUSE_NUMBER_PATTERN,
   OTHER_STREET,
 } from "@/lib/locations";
-import { CONTACT_NUMBER_PATTERN } from "@/lib/registration";
+import { CONTACT_NUMBER_PATTERN, isValidPersonName, NAME_ERROR } from "@/lib/registration";
 
 const idSchema = z.string().min(1);
 const contact = z.string().trim().regex(CONTACT_NUMBER_PATTERN);
 const name = z.string().trim().min(2).max(120);
+const password = z
+  .string()
+  .min(8)
+  .max(72)
+  .regex(/[a-z]/)
+  .regex(/[A-Z]/)
+  .regex(/\d/);
 
 function back(
   memberId: string,
@@ -47,9 +55,8 @@ export async function updateMemberAction(formData: FormData) {
 
   const parsed = z
     .object({
-      firstName: name.regex(/^[A-Za-z .'-]+$/),
-      lastName: name.regex(/^[A-Za-z .'-]+$/),
-      email: z.string().trim().toLowerCase().email().max(254),
+      firstName: name,
+      lastName: name,
       contactNumber: contact,
       occupancyType: z.enum(["OWNER_OCCUPIED", "TENANT"]),
       status: z.enum(["ACTIVE", "INACTIVE"]),
@@ -57,7 +64,6 @@ export async function updateMemberAction(formData: FormData) {
     .safeParse({
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
-      email: formData.get("email"),
       contactNumber: formData.get("contactNumber"),
       occupancyType: formData.get("occupancyType"),
       status: formData.get("status"),
@@ -67,9 +73,16 @@ export async function updateMemberAction(formData: FormData) {
     back(
       memberId,
       "overview",
-      "Check the name, email, 11-digit contact number and status.",
+      "Check the name, 11-digit contact number and status.",
       "error",
     );
+  }
+
+  if (
+    !isValidPersonName(parsed.data.firstName) ||
+    !isValidPersonName(parsed.data.lastName)
+  ) {
+    back(memberId, "overview", NAME_ERROR, "error");
   }
 
   const member = await prisma.member.update({
@@ -197,6 +210,10 @@ export async function addHouseholdMemberAction(formData: FormData) {
     back(memberId, "people", "Enter a full name and relationship.", "error");
   }
 
+  if (!isValidPersonName(parsed.data.fullName)) {
+    back(memberId, "people", NAME_ERROR, "error");
+  }
+
   await prisma.householdMember.create({
     data: {
       memberId,
@@ -240,9 +257,13 @@ export async function addKasambahayAction(formData: FormData) {
     back(
       memberId,
       "kasambahay",
-      "Enter a full name and an 11-digit contact number.",
+      "Enter a full name. The contact number is optional, but if given it must be 11 digits.",
       "error",
     );
+  }
+
+  if (!isValidPersonName(parsed.data.fullName)) {
+    back(memberId, "kasambahay", NAME_ERROR, "error");
   }
 
   await prisma.kasambahay.create({
@@ -372,4 +393,128 @@ export async function removeVehicleAction(formData: FormData) {
 
   refresh(memberId);
   back(memberId, "vehicles", "Vehicle removed.");
+}
+
+// Admins are the only way to recover a forgotten password now that the OTP and
+// self-service change-password flows are gone. Resetting also signs the resident
+// out everywhere so an old session cannot outlive the change.
+export async function resetMemberPasswordAction(formData: FormData) {
+  const admin = await requireRole("ADMIN");
+  const memberId = requireMemberId(formData);
+
+  const parsed = z
+    .object({
+      userId: idSchema,
+      password,
+      confirmPassword: z.string().min(8).max(72),
+    })
+    .safeParse({
+      userId: formData.get("userId"),
+      password: formData.get("password"),
+      confirmPassword: formData.get("confirmPassword"),
+    });
+
+  if (!parsed.success) {
+    back(
+      memberId,
+      "overview",
+      "Use at least 8 characters with upper and lowercase letters and a number.",
+      "error",
+    );
+  }
+
+  if (parsed.data.password !== parsed.data.confirmPassword) {
+    back(memberId, "overview", "The passwords do not match.", "error");
+  }
+
+  const account = await prisma.user.findFirst({
+    where: { id: parsed.data.userId, memberId },
+    select: { id: true, username: true },
+  });
+
+  if (!account) {
+    back(
+      memberId,
+      "overview",
+      "No portal login is linked to this household.",
+      "error",
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: account.id },
+      data: { passwordHash },
+    }),
+    prisma.session.deleteMany({ where: { userId: account.id } }),
+  ]);
+
+  await logAudit({
+    actorUserId: admin.id,
+    action: "PASSWORD_RESET",
+    entityType: "User",
+    entityId: account.id,
+    metadata: { username: account.username, memberId },
+  });
+
+  refresh(memberId);
+  back(
+    memberId,
+    "overview",
+    `Password reset for ${account.username}. Existing sessions were signed out.`,
+  );
+}
+
+export async function deleteMemberAction(formData: FormData) {
+  const admin = await requireRole("ADMIN");
+  const memberId = requireMemberId(formData);
+
+  const member = await prisma.member.findUnique({
+    where: { id: memberId },
+    include: {
+      household: {
+        include: {
+          members: true,
+          account: true,
+        },
+      },
+      accountUser: true,
+    },
+  });
+
+  if (!member) {
+    redirect("/admin/members?error=Member+not+found");
+  }
+
+  const memberName = `${member.firstName} ${member.lastName}`;
+  const householdId = member.householdId;
+
+  // If this member is the sole member of the household, clean up the household
+  if (member.household.members.length <= 1) {
+    if (member.household.account) {
+      await prisma.user.delete({ where: { id: member.household.account.id } });
+    }
+    await prisma.household.delete({ where: { id: householdId } });
+  } else {
+    if (member.accountUser) {
+      await prisma.user.delete({ where: { id: member.accountUser.id } });
+    }
+    await prisma.member.delete({ where: { id: memberId } });
+  }
+
+  await logAudit({
+    actorUserId: admin.id,
+    action: "MEMBER_DELETED",
+    entityType: "Member",
+    entityId: memberId,
+    metadata: {
+      name: memberName,
+      householdId,
+    },
+  });
+
+  revalidatePath("/admin/members");
+  redirect("/admin/members?notice=Member+record+has+been+deleted.");
 }

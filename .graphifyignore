@@ -1,0 +1,11 @@
+# Duplicate/untracked copy of this same project (adds every node twice).
+asianleaf/
+
+# Graphify's own artifacts.
+graphify-out/
+.graphify/
+.graphifyignore
+
+# Build/dependency output.
+node_modules/
+.next/

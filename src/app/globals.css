@@ -257,3 +257,21 @@
     transform: none;
   }
 }
+
+/* Reports print layout: drop the app chrome and let the table use the page. */
+@media print {
+  aside,
+  header,
+  nav,
+  button {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+}

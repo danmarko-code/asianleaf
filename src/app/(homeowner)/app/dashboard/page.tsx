@@ -27,11 +27,6 @@ const links = [
     description: "Contact details, kasambahay, pets, vehicles and household members.",
   },
   {
-    href: "/app/change-password",
-    title: "Change password",
-    description: "Confirm the change with a one-time code sent to your email.",
-  },
-  {
     href: "/app/budget",
     title: "Transparency report",
     description: "See the association income and expenses posted by the treasurer.",
@@ -69,7 +64,7 @@ export default async function HomeownerDashboardPage() {
     prisma.due.findFirst({
       where: {
         householdId,
-        status: { in: ["UNPAID", "PARTIALLY_PAID"] },
+        status: "UNPAID",
       },
       orderBy: { dueDate: "asc" },
       include: {
@@ -146,19 +141,51 @@ export default async function HomeownerDashboardPage() {
             </CardDescription>
           </div>
           <Badge tone={due ? "warning" : "success"}>
-            {due ? (balance < Number(due.amount) ? "Partially paid" : "Unpaid") : "Paid up"}
+            {due ? "Unpaid" : "Paid up"}
           </Badge>
         </CardHeader>
         <CardBody>
           {due ? (
             <>
-              <p className="tabular font-serif text-4xl text-forest">
-                {formatPeso(balance)}
-              </p>
-              <p className="mt-2 text-sm text-muted">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="tabular font-serif text-4xl text-forest">
+                  {formatPeso(balance)}
+                </p>
+                <span className="text-sm text-muted">
+                  Remaining balance of {formatPeso(Number(due.amount))}
+                </span>
+              </div>
+
+              {/* Payment Visual Progress Bar */}
+              <div className="mt-4 space-y-1.5">
+                <div className="flex justify-between text-xs font-medium">
+                  <span className="text-ink">
+                    {Math.round(((Number(due.amount) - balance) / Number(due.amount)) * 100)}% Paid
+                  </span>
+                  <span className="text-muted tabular">
+                    Paid {formatPeso(Number(due.amount) - balance)} / {formatPeso(Number(due.amount))}
+                  </span>
+                </div>
+                <div className="h-3 w-full overflow-hidden rounded-full bg-line/60">
+                  <div
+                    className="h-full rounded-full bg-forest transition-all duration-500"
+                    style={{
+                      width: `${Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          Math.round(((Number(due.amount) - balance) / Number(due.amount)) * 100),
+                        ),
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm text-muted">
                 Billing period starts {formatMonthDay(due.periodStart)}. Due{" "}
                 {formatMonthDay(due.dueDate)}. Full dues are{" "}
-                {formatPeso(Number(due.amount))}; partial payments are allowed.
+                {formatPeso(Number(due.amount))}.
               </p>
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Link href="/app/payments" className={buttonStyles()}>
@@ -172,12 +199,25 @@ export default async function HomeownerDashboardPage() {
             </>
           ) : (
             <>
-              <p className="tabular font-serif text-4xl text-forest">
-                {formatPeso(0)}
-              </p>
-              <p className="mt-2 text-sm text-muted">
-                No open balance right now. The next billing period is{" "}
-                {formatPeso(MONTHLY_DUES)}.
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="tabular font-serif text-4xl text-forest">
+                  {formatPeso(0)}
+                </p>
+                <span className="text-sm font-medium text-forest">
+                  100% Settled
+                </span>
+              </div>
+
+              {/* Settled Visual Progress Bar */}
+              <div className="mt-4 space-y-1.5">
+                <div className="h-3 w-full overflow-hidden rounded-full bg-forest/15">
+                  <div className="h-full w-full rounded-full bg-forest" />
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm text-muted">
+                No open balance right now. All dues are settled. The next billing
+                period will open at {formatPeso(MONTHLY_DUES)}.
               </p>
               <div className="mt-5">
                 <Link

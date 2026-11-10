@@ -57,7 +57,6 @@ export default async function AdminMembersPage({
       OR: [
         { firstName: { contains: term, mode: "insensitive" } },
         { lastName: { contains: term, mode: "insensitive" } },
-        { email: { contains: term, mode: "insensitive" } },
         { contactNumber: { contains: term, mode: "insensitive" } },
         {
           household: {
@@ -164,7 +163,7 @@ export default async function AdminMembersPage({
                 name="q"
                 type="search"
                 defaultValue={q}
-                placeholder="Name, email, contact or address"
+                placeholder="Name, contact or address"
               />
             </div>
             <div className="lg:col-span-4">
@@ -264,6 +263,7 @@ export default async function AdminMembersPage({
                     <Th>Contact</Th>
                     <Th>Household</Th>
                     <Th>Status</Th>
+                    <Th className="text-right">Action</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -284,9 +284,6 @@ export default async function AdminMembersPage({
                           >
                             {member.firstName} {member.lastName}
                           </Link>
-                          <p className="mt-0.5 text-xs text-muted">
-                            {member.email}
-                          </p>
                         </Td>
                         <Td>
                           <p className="text-ink">{household.unitAddress}</p>
@@ -327,6 +324,14 @@ export default async function AdminMembersPage({
                           <Badge tone={statusTone[member.status]}>
                             {member.status === "ACTIVE" ? "Active" : "Inactive"}
                           </Badge>
+                        </Td>
+                        <Td className="text-right whitespace-nowrap">
+                          <Link
+                            href={`/admin/members/${member.id}`}
+                            className={buttonStyles({ variant: "ghost", size: "sm" })}
+                          >
+                            Edit / Manage
+                          </Link>
                         </Td>
                       </tr>
                     );

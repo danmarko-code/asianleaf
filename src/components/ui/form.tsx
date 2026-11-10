@@ -4,6 +4,7 @@ import {
   forwardRef,
   useId,
   useState,
+  type ChangeEvent,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -68,12 +69,41 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   hint?: string;
   error?: string;
+  // Strip every non-digit as the user types (contact numbers).
+  onlyDigits?: boolean;
+  // Strip digits and symbols a person name may not contain.
+  nameOnly?: boolean;
 };
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  function Input({ label, hint, error, required, id, className, ...props }, ref) {
+  function Input(
+    {
+      label,
+      hint,
+      error,
+      required,
+      id,
+      className,
+      onlyDigits,
+      nameOnly,
+      onChange,
+      ...props
+    },
+    ref,
+  ) {
     const generatedId = useId();
     const inputId = id ?? generatedId;
+
+    function handleChange(event: ChangeEvent<HTMLInputElement>) {
+      if (onlyDigits || nameOnly) {
+        const raw = event.target.value;
+        const clean = onlyDigits
+          ? raw.replace(/\D/g, "")
+          : raw.replace(/[^A-Za-zÑñ .'-]/g, "");
+        if (clean !== raw) event.target.value = clean;
+      }
+      onChange?.(event);
+    }
 
     return (
       <Field
@@ -90,6 +120,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${inputId}-error` : undefined}
           required={required}
+          inputMode={onlyDigits ? "numeric" : props.inputMode}
+          onChange={handleChange}
           {...props}
         />
       </Field>

@@ -4,7 +4,7 @@ type Message = {
   body: string;
 };
 
-// Provider boundary for outbound email/SMS. No real provider is configured in
+// Provider boundary for outbound SMS. No real provider is configured in
 // this project, so messages are written to the server log. Swapping in Resend,
 // Semaphore or another provider only requires changing this file.
 export async function sendMessage(message: Message) {

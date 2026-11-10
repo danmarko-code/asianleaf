@@ -20,7 +20,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
-import { MONTHLY_DUES } from "@/lib/constants";
 import { formatMonthDay } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import {
@@ -34,7 +33,6 @@ export const metadata: Metadata = { title: "Dues" };
 
 const statusTone = {
   UNPAID: "warning",
-  PARTIALLY_PAID: "warning",
   PAID: "success",
   WAIVED: "neutral",
 } as const;
@@ -85,9 +83,7 @@ export default async function AdminDuesPage({
   const billed = rows.reduce((total, row) => total + Number(row.due.amount), 0);
   const collected = rows.reduce((total, row) => total + row.paid, 0);
   const outstanding = rows.reduce((total, row) => total + row.balance, 0);
-  const openCount = rows.filter(
-    (row) => row.due.status === "UNPAID" || row.due.status === "PARTIALLY_PAID",
-  ).length;
+  const openCount = rows.filter((row) => row.due.status === "UNPAID").length;
 
   return (
     <div className="space-y-6">
@@ -99,12 +95,6 @@ export default async function AdminDuesPage({
 
       {query.notice ? <Alert tone="success">{query.notice}</Alert> : null}
       {query.error ? <Alert tone="danger">{query.error}</Alert> : null}
-
-      <Alert tone="info" title="Partial payments are allowed">
-        Each household is billed {formatPeso(MONTHLY_DUES)} on the 5th. A due
-        stays open until the paid amount reaches the full amount. Reminders are
-        de-duplicated per billing period and repeat weekly while overdue.
-      </Alert>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -205,13 +195,16 @@ export default async function AdminDuesPage({
                       <Td className="tabular">{formatPeso(paid)}</Td>
                       <Td className="tabular">{formatPeso(balance)}</Td>
                       <Td>
-                        <Badge tone={statusTone[due.status]}>
-                          {due.status.replace("_", " ")}
-                        </Badge>
+                        {due.status === "UNPAID" && due.dueDate < new Date() ? (
+                          <Badge tone="danger">Overdue</Badge>
+                        ) : (
+                          <Badge tone={statusTone[due.status]}>
+                            {due.status.replace("_", " ")}
+                          </Badge>
+                        )}
                       </Td>
                       <Td>
-                        {due.status === "UNPAID" ||
-                        due.status === "PARTIALLY_PAID" ? (
+                        {due.status === "UNPAID" ? (
                           <form action={waiveDueAction}>
                             <input type="hidden" name="dueId" value={due.id} />
                             <Button type="submit" size="sm" variant="ghost">

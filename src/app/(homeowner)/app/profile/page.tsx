@@ -23,6 +23,7 @@ import { Input, Select } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { NAME_INPUT_PATTERN, NAME_ERROR } from "@/lib/registration";
 
 export const metadata: Metadata = { title: "Household profile" };
 
@@ -114,23 +115,18 @@ export default async function HomeownerProfilePage({
         <CardHeader>
           <CardTitle>Contact details</CardTitle>
           <CardDescription>
-            Your email is also the household login.
+            Keep your contact number up to date so the association can reach
+            you.
           </CardDescription>
         </CardHeader>
         <CardBody>
           <form action={updateOwnContactAction} className="space-y-4">
             <Input
-              label="Email"
-              name="email"
-              type="email"
-              defaultValue={member.email}
-              required
-            />
-            <Input
               label="Contact number"
               name="contactNumber"
               defaultValue={member.contactNumber}
               required
+              onlyDigits
               minLength={11}
               maxLength={11}
               pattern="[0-9]{11}"
@@ -159,6 +155,9 @@ export default async function HomeownerProfilePage({
               required
               minLength={2}
               maxLength={120}
+              pattern={NAME_INPUT_PATTERN}
+              nameOnly
+              hint={NAME_ERROR}
             />
             <Select label="Relationship" name="relationship" defaultValue="">
               <option value="">Not specified</option>
@@ -219,15 +218,18 @@ export default async function HomeownerProfilePage({
               required
               minLength={2}
               maxLength={120}
+              pattern={NAME_INPUT_PATTERN}
+              nameOnly
+              hint={NAME_ERROR}
             />
             <Input
               label="Contact number"
               name="contactNumber"
-              required
-              minLength={11}
+              onlyDigits
               maxLength={11}
               pattern="[0-9]{11}"
-              placeholder="09171234567"
+              placeholder="Optional"
+              hint="Optional. If given, use 11 digits."
             />
             <Button type="submit" size="sm" variant="secondary">
               Add kasambahay

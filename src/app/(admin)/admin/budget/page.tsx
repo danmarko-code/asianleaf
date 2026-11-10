@@ -41,7 +41,7 @@ export default async function AdminBudgetPage({
     prisma.budgetEntry.findMany({
       orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
       take: 100,
-      include: { createdBy: { select: { email: true } } },
+      include: { createdBy: { select: { username: true } } },
     }),
     prisma.budgetEntry.findMany({
       where: { occurredAt: { gte: monthStart, lt: monthEnd } },
@@ -189,7 +189,7 @@ export default async function AdminBudgetPage({
                       <Td>
                         <p className="max-w-80 text-sm">{entry.description}</p>
                         <p className="mt-0.5 text-xs text-muted">
-                          by {entry.createdBy.email}
+                          by {entry.createdBy.username}
                         </p>
                       </Td>
                       <Td className="tabular">

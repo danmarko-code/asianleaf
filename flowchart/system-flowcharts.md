@@ -97,7 +97,7 @@ See `00-whole-system.mmd` (single picture, four lanes).
 | AG | Send reminders — daily cron or manual button | Rectangle | — |
 | AH | Verify the GCash payment? | Diamond | Approve → AI · Reject → AK |
 | AI | Payment = PAID, receipt `RCPT-YYYY-XXXXXX` | Rectangle | AJ |
-| AJ | Recompute the Due: PAID or PARTIALLY_PAID | Cylinder | HB |
+| AJ | Recompute the Due: PAID or UNPAID | Cylinder | HB |
 | AK | Payment = REJECTED, reason saved | Cylinder | HD |
 | AL | Issue a violation: warning or payment required | Rectangle | HH |
 | AM | Post a budget entry: income or expense | Rectangle | HI |
@@ -246,7 +246,7 @@ reminder job in a box of its own.
 | # | Text in shape | Shape | Next |
 |---|---|---|---|
 | P1 | Homeowner opens `/app/payments` | Oval · Start | P2 |
-| P2 | Open due exists (UNPAID / PARTIALLY_PAID)? | Diamond | No → P3 · Yes → P4 |
+| P2 | Open due exists (UNPAID)? | Diamond | No → P3 · Yes → P4 |
 | P3 | "No open balance" — history only | Parallelogram | P12 |
 | P4 | Scan GCash QR, enter amount, reference, date, channel | Parallelogram | P5 |
 | P5 | Amount within remaining balance? | Diamond | No → P6 · Yes → P7 |
@@ -266,7 +266,7 @@ reminder job in a box of its own.
 | V3 | "Only pending payments can be reviewed" | Parallelogram | V11 |
 | V4 | Approve or reject? | Diamond | Reject → V8 · Approve → V5 |
 | V5 | Payment = PAID, receipt `RCPT-YYYY-XXXXXX` | Rectangle | V6 |
-| V6 | Recompute Due: PAID if fully covered, else PARTIALLY_PAID | Cylinder | V7 |
+| V6 | Recompute Due: PAID if fully covered, else UNPAID | Cylinder | V7 |
 | V7 | Notification + audit log | Document | V11 |
 | V8 | Enter rejection reason (3–300) | Parallelogram | V9 |
 | V9 | Payment = REJECTED, Due unchanged | Cylinder | V10 |
@@ -278,7 +278,7 @@ reminder job in a box of its own.
 | # | Text in shape | Shape | Next |
 |---|---|---|---|
 | R1 | Cron `/api/cron/reminders` or admin button | Oval · Start | R2 |
-| R2 | Find dues UNPAID/PARTIALLY_PAID with dueDate ≤ today + 30 | Rectangle | R3 |
+| R2 | Find dues UNPAID with dueDate ≤ today + 30 | Rectangle | R3 |
 | R3 | Balance > 0? | Diamond | No → R8 · Yes → R4 |
 | R4 | Bucket: OVERDUE / 1 day / 1 week / 1 month | Hexagon | R5 |
 | R5 | Same reminder already logged? | Diamond | Yes → R8 · No → R6 |

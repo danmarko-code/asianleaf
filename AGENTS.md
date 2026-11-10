@@ -41,14 +41,17 @@ npm run db:studio
   approve/reject, receipt and due updates. No receipt uploads.
 - **Violations:** warning or payment-required notices, household/member targeting,
   resolve/dismiss, red dashboard alert.
-- **Members:** search by name/email/contact/address; filters for street,
-  block, occupancy, status.
+- **Members:** search by name/contact/address; filters for street,
+  block, occupancy, status. Member records include an admin **Portal login**
+  card for resetting a password.
 - **Dark mode:** persisted theme toggle in auth/admin/homeowner headers and design
   guide; system preference on first visit.
 - **Login and accounts:**
-  - Sign-in uses a unique `User.username` plus password. Email is not collected
-    when a member is created; a username-based placeholder is stored and can be
-    replaced later.
+  - Sign-in uses a unique `User.username` plus password. No email address is
+    stored for users or members.
+  - There is no self-service change-password or forgot-password flow and no
+    OTP. An admin resets a password from the member record; that reset deletes
+    the user's sessions.
   - Contact numbers are exactly 11 digits. Passwords need at least 8 characters,
     upper and lowercase letters, and a number; forms show live checks.
 - **Admin member creation:**
@@ -60,6 +63,10 @@ npm run db:studio
   - The account is `ACTIVE` immediately and receives an in-app welcome notice.
 - **Member records:** `/admin/members/[id]` has tabs for overview, household,
   kasambahay, pets, vehicles and violations, with add/edit/remove forms.
+- **Reports:** `/admin/reports` builds unpaid dues, inactive members, open
+  violations and payments tables with date filters, print CSS and CSV export at
+  `/admin/reports/export`.
+- **Dashboard:** clickable section tiles show counts for every admin area.
 - Seed creates usernames for every login; README updated.
 
 ## Validation already done
@@ -72,20 +79,20 @@ npm run db:studio
   before building; a running dev server can corrupt `.next` and trigger
   `/_not-found` invariant errors.
 - Latest migrations:
+  `20261112000000_remove_otp_and_email`,
   `20261111000000_payment_methods`,
   `20261110000000_username_login_remove_requests`,
   `20261029014500_restrict_occupancy_types`.
 
 ## Next phase
-Remaining work: outbound email/SMS delivery, official GCash QR asset, and any
-further reporting/reminder polish.
+Remaining work: outbound SMS delivery, official GCash QR asset, and any further
+reporting/reminder polish.
 
 ## Known gaps / notes
 - Official GCash QR image is not supplied; UI shows “QR image pending.”
-- No outbound email/SMS; member-account notice and other notifications are in-app
-  only.
+- No outbound SMS provider; reminders log to the console and member-account
+  notices are in-app only.
 - `next.config.ts` has `devIndicators: false` because the dev badge overlapped
   the theme toggle.
 - Test accounts use password `Leaf2026!`: usernames `admin`, `treasurer`,
-  `maria.santos`, `jose.reyes`, `ana.delacruz`, `pedro.lim`. Emails keep the
-  `@asialeaf.test` / `@example.test` addresses.
+  `maria.santos`, `jose.reyes`, `ana.delacruz`, `pedro.lim`.

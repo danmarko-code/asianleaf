@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { loginAction } from "@/app/(auth)/actions";
 import { Alert } from "@/components/ui/alert";
@@ -51,17 +50,9 @@ export default async function LoginPage({
           </Button>
         </form>
 
-        <p className="mt-3 text-sm text-muted">
-          <Link
-            href="/forgot-password"
-            className="text-forest underline underline-offset-4"
-          >
-            Forgot your password?
-          </Link>
-        </p>
-
         <p className="mt-4 text-xs text-muted">
-          Household logins are issued by the association office.
+          Household logins are issued by the association office. Ask the office
+          to reset a forgotten password.
         </p>
       </CardBody>
     </Card>

@@ -31,6 +31,7 @@ const navItems = [
   { href: "/admin/budget", label: "Budget", icon: ChartIcon },
   { href: "/admin/violations", label: "Violations", icon: AlertIcon },
   { href: "/admin/feedback", label: "Feedback", icon: MessageIcon },
+  { href: "/admin/reports", label: "Reports", icon: ChartIcon },
   { href: "/admin/audit", label: "Audit log", icon: BellIcon },
 ];
 
@@ -43,7 +44,7 @@ function SidebarContent({
 }: {
   collapsed: boolean;
   pathname: string;
-  user: { name: string; email: string };
+  user: { name: string; username: string };
   onNavigate?: () => void;
   onToggle?: () => void;
 }) {
@@ -101,7 +102,7 @@ function SidebarContent({
             "flex items-center gap-3 rounded-md px-3 py-2",
             collapsed && "justify-center px-0",
           )}
-          title={collapsed ? user.email : undefined}
+          title={collapsed ? user.username : undefined}
         >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-soft text-xs font-semibold uppercase text-forest">
             {user.name.slice(0, 1)}
@@ -109,7 +110,7 @@ function SidebarContent({
           {!collapsed ? (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-ink">{user.name}</p>
-              <p className="truncate text-xs text-muted">{user.email}</p>
+              <p className="truncate text-xs text-muted">{user.username}</p>
             </div>
           ) : null}
         </div>
@@ -154,7 +155,7 @@ export function AdminShell({
   user,
 }: {
   children: ReactNode;
-  user: { name: string; email: string };
+  user: { name: string; username: string };
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -266,7 +267,7 @@ export function AdminShell({
 
           <div className="ml-auto flex items-center gap-3">
             <ThemeToggle />
-            <span className="hidden text-xs text-muted sm:block">{user.email}</span>
+            <span className="hidden text-xs text-muted sm:block">{user.username}</span>
             <Badge tone="success">Confirmed</Badge>
           </div>
         </header>

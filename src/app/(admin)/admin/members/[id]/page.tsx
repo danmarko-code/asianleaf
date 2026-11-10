@@ -6,10 +6,12 @@ import {
   addKasambahayAction,
   addPetAction,
   addVehicleAction,
+  deleteMemberAction,
   removeHouseholdMemberAction,
   removeKasambahayAction,
   removePetAction,
   removeVehicleAction,
+  resetMemberPasswordAction,
   updateHouseholdUnitAction,
   updateMemberAction,
 } from "@/app/(admin)/admin/members/actions";
@@ -24,7 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input, Select } from "@/components/ui/form";
+import { Input, PasswordInput, Select } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
 import { requireRole } from "@/lib/auth";
@@ -32,6 +34,7 @@ import { formatDate, formatMonthDay } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import { OTHER_STREET, STREETS } from "@/lib/locations";
 import { formatPeso } from "@/lib/money";
+import { NAME_INPUT_PATTERN, NAME_ERROR } from "@/lib/registration";
 
 export const metadata: Metadata = { title: "Member record" };
 
@@ -47,11 +50,11 @@ const tabs = [
 type TabKey = (typeof tabs)[number]["key"];
 
 const occupancyLabels = {
-  OWNER_OCCUPIED: "Owner",
+  OWNER_OCCUPIED: "Owner-occupied",
   TENANT: "Tenant",
 } as const;
 
-const violationTone = {
+const violationStatusTone = {
   OPEN: "warning",
   RESOLVED: "success",
   DISMISSED: "neutral",
@@ -79,7 +82,9 @@ export default async function AdminMemberDetailPage({
     include: {
       household: {
         include: {
-          account: { select: { username: true, email: true, status: true } },
+          account: {
+            select: { id: true, username: true, status: true },
+          },
           members: {
             orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
           },
@@ -115,42 +120,48 @@ export default async function AdminMemberDetailPage({
       <PageHeader
         eyebrow="Member record"
         title={`${member.firstName} ${member.lastName}`}
-        description={`${household.unitAddress} · ${
-          occupancyLabels[member.occupancyType]
-        } · ${member.status === "ACTIVE" ? "Active" : "Inactive"}`}
+        description={`${household.unitAddress} · ${occupancyLabels[member.occupancyType]}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge tone={member.status === "ACTIVE" ? "success" : "neutral"}>
+              {member.status === "ACTIVE" ? "Active" : "Inactive"}
+            </Badge>
+            <Badge tone="forest">
+              {occupancyLabels[member.occupancyType]}
+            </Badge>
+          </div>
+        }
       />
 
       {query.notice ? <Alert tone="success">{query.notice}</Alert> : null}
       {query.error ? <Alert tone="danger">{query.error}</Alert> : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href="/admin/members"
-          className={buttonStyles({ variant: "secondary", size: "sm" })}
-        >
-          Back to members
-        </Link>
-        {tabs.map((item) => (
-          <Link
-            key={item.key}
-            href={`/admin/members/${member.id}?tab=${item.key}`}
-            className={buttonStyles({
-              variant: tab === item.key ? "primary" : "secondary",
-              size: "sm",
-            })}
-          >
-            {item.label}
-          </Link>
-        ))}
+      <div className="flex flex-wrap gap-2 border-b border-line pb-3">
+        {tabs.map((item) => {
+          const active = item.key === tab;
+          return (
+            <Link
+              key={item.key}
+              href={`/admin/members/${member.id}?tab=${item.key}`}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-forest text-white dark:bg-lime dark:text-[#1a220f]"
+                  : "text-muted hover:bg-cream hover:text-ink"
+              }`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
 
       {tab === "overview" ? (
         <div className="grid gap-6 xl:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Resident details</CardTitle>
+              <CardTitle>Edit resident details</CardTitle>
               <CardDescription>
-                Update the primary resident for this household.
+                Primary resident name, contact number and status.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -164,6 +175,9 @@ export default async function AdminMemberDetailPage({
                     required
                     minLength={2}
                     maxLength={60}
+                    pattern={NAME_INPUT_PATTERN}
+                    nameOnly
+                    hint={NAME_ERROR}
                   />
                   <Input
                     label="Last name"
@@ -172,23 +186,21 @@ export default async function AdminMemberDetailPage({
                     required
                     minLength={2}
                     maxLength={60}
+                    pattern={NAME_INPUT_PATTERN}
+                    nameOnly
+                    hint={NAME_ERROR}
                   />
                 </div>
-                <Input
-                  label="Email"
-                  name="email"
-                  type="email"
-                  defaultValue={member.email}
-                  required
-                />
                 <Input
                   label="Contact number"
                   name="contactNumber"
                   defaultValue={member.contactNumber}
                   required
+                  onlyDigits
                   minLength={11}
                   maxLength={11}
                   pattern="[0-9]{11}"
+                  hint="Exactly 11 digits."
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Select
@@ -196,7 +208,7 @@ export default async function AdminMemberDetailPage({
                     name="occupancyType"
                     defaultValue={member.occupancyType}
                   >
-                    <option value="OWNER_OCCUPIED">Owner</option>
+                    <option value="OWNER_OCCUPIED">Owner-occupied</option>
                     <option value="TENANT">Tenant</option>
                   </Select>
                   <Select
@@ -269,9 +281,6 @@ export default async function AdminMemberDetailPage({
                     maxLength={10}
                   />
                 </div>
-                <p className="rounded-md border border-dashed border-line bg-cream px-3 py-2 text-xs text-muted">
-                  Current label: {household.unitAddress}
-                </p>
                 <Button type="submit" size="sm">
                   Save household unit
                 </Button>
@@ -343,6 +352,29 @@ export default async function AdminMemberDetailPage({
               )}
             </CardBody>
           </Card>
+
+          {/* Danger Zone: Delete Member */}
+          <Card className="xl:col-span-2 border-red/40 bg-red-soft/10">
+            <CardHeader>
+              <CardTitle className="text-red">Delete member record</CardTitle>
+              <CardDescription>
+                Permanently delete this resident from the association directory.
+              </CardDescription>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              <p className="text-sm text-ink">
+                Deleting <strong>{member.firstName} {member.lastName}</strong> removes
+                their directory entry, any linked portal login, and related household
+                data. This action is logged in the audit trail and cannot be undone.
+              </p>
+              <form action={deleteMemberAction}>
+                <input type="hidden" name="memberId" value={member.id} />
+                <Button type="submit" variant="danger" size="sm">
+                  Delete member
+                </Button>
+              </form>
+            </CardBody>
+          </Card>
         </div>
       ) : null}
 
@@ -359,7 +391,6 @@ export default async function AdminMemberDetailPage({
               <p className="font-medium text-ink">
                 {member.firstName} {member.lastName}
               </p>
-              <p className="text-muted">{member.email}</p>
               <p className="text-muted">{member.contactNumber}</p>
               <p className="text-muted">
                 {occupancyLabels[member.occupancyType]} · {member.status}
@@ -383,6 +414,9 @@ export default async function AdminMemberDetailPage({
                   required
                   minLength={2}
                   maxLength={120}
+                  pattern={NAME_INPUT_PATTERN}
+                  nameOnly
+                  hint={NAME_ERROR}
                 />
                 <Select
                   label="Relationship"
@@ -412,32 +446,52 @@ export default async function AdminMemberDetailPage({
                 {member.occupants.length === 1 ? "" : "s"}.
               </CardDescription>
             </CardHeader>
-            <CardBody className="space-y-3">
+            <CardBody className="px-0 py-0">
               {member.occupants.length === 0 ? (
-                <p className="text-sm text-muted">No additional members listed.</p>
+                <EmptyState
+                  title="No household members listed"
+                  description="Add dependents or other occupants using the form above."
+                  className="mx-5 my-5"
+                />
               ) : (
-                member.occupants.map((person) => (
-                  <div
-                    key={person.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-ink">
-                        {person.fullName}
-                      </p>
-                      <p className="text-xs text-muted">
-                        {person.relationship ?? "Relationship not set"}
-                      </p>
-                    </div>
-                    <form action={removeHouseholdMemberAction}>
-                      <input type="hidden" name="memberId" value={member.id} />
-                      <input type="hidden" name="id" value={person.id} />
-                      <Button type="submit" size="sm" variant="ghost">
-                        Remove
-                      </Button>
-                    </form>
-                  </div>
-                ))
+                <TableWrapper>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Name</Th>
+                        <Th>Relationship</Th>
+                        <Th>Action</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {member.occupants.map((person) => (
+                        <tr key={person.id}>
+                          <Td className="font-medium text-ink">
+                            {person.fullName}
+                          </Td>
+                          <Td>{person.relationship ?? "Not specified"}</Td>
+                          <Td>
+                            <form action={removeHouseholdMemberAction}>
+                              <input
+                                type="hidden"
+                                name="memberId"
+                                value={member.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="id"
+                                value={person.id}
+                              />
+                              <Button type="submit" size="sm" variant="ghost">
+                                Remove
+                              </Button>
+                            </form>
+                          </Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </TableWrapper>
               )}
             </CardBody>
           </Card>
@@ -450,7 +504,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Add kasambahay</CardTitle>
               <CardDescription>
-                Household help staying or working at the unit.
+                Household staff registered with this address.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -462,15 +516,19 @@ export default async function AdminMemberDetailPage({
                   required
                   minLength={2}
                   maxLength={120}
+                  pattern={NAME_INPUT_PATTERN}
+                  nameOnly
+                  hint={NAME_ERROR}
                 />
                 <Input
                   label="Contact number"
                   name="contactNumber"
-                  required
+                  onlyDigits
                   minLength={11}
                   maxLength={11}
                   pattern="[0-9]{11}"
-                  placeholder="09171234567"
+                  placeholder="Optional"
+                  hint="Optional. If given, use 11 digits."
                 />
                 <Button type="submit" size="sm">
                   Add kasambahay
@@ -481,38 +539,58 @@ export default async function AdminMemberDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Listed kasambahay</CardTitle>
+              <CardTitle>Registered staff</CardTitle>
               <CardDescription>
-                {member.kasambahay.length} record
+                {member.kasambahay.length} registered staff member
                 {member.kasambahay.length === 1 ? "" : "s"}.
               </CardDescription>
             </CardHeader>
-            <CardBody className="space-y-3">
+            <CardBody className="px-0 py-0">
               {member.kasambahay.length === 0 ? (
-                <p className="text-sm text-muted">No kasambahay listed.</p>
+                <EmptyState
+                  title="No kasambahay registered"
+                  description="Add household staff using the form on the left."
+                  className="mx-5 my-5"
+                />
               ) : (
-                member.kasambahay.map((person) => (
-                  <div
-                    key={person.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-ink">
-                        {person.fullName}
-                      </p>
-                      <p className="text-xs text-muted">
-                        {person.contactNumber ?? "No contact number"}
-                      </p>
-                    </div>
-                    <form action={removeKasambahayAction}>
-                      <input type="hidden" name="memberId" value={member.id} />
-                      <input type="hidden" name="id" value={person.id} />
-                      <Button type="submit" size="sm" variant="ghost">
-                        Remove
-                      </Button>
-                    </form>
-                  </div>
-                ))
+                <TableWrapper>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Name</Th>
+                        <Th>Contact</Th>
+                        <Th>Action</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {member.kasambahay.map((person) => (
+                        <tr key={person.id}>
+                          <Td className="font-medium text-ink">
+                            {person.fullName}
+                          </Td>
+                          <Td>{person.contactNumber || "—"}</Td>
+                          <Td>
+                            <form action={removeKasambahayAction}>
+                              <input
+                                type="hidden"
+                                name="memberId"
+                                value={member.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="id"
+                                value={person.id}
+                              />
+                              <Button type="submit" size="sm" variant="ghost">
+                                Remove
+                              </Button>
+                            </form>
+                          </Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </TableWrapper>
               )}
             </CardBody>
           </Card>
@@ -524,7 +602,9 @@ export default async function AdminMemberDetailPage({
           <Card>
             <CardHeader>
               <CardTitle>Add pet</CardTitle>
-              <CardDescription>List each pet kept at the unit.</CardDescription>
+              <CardDescription>
+                Pets kept at the unit address.
+              </CardDescription>
             </CardHeader>
             <CardBody>
               <form action={addPetAction} className="space-y-4">
@@ -534,15 +614,13 @@ export default async function AdminMemberDetailPage({
                   name="name"
                   required
                   maxLength={60}
+                  placeholder="Mochi"
                 />
-                <Input label="Breed" name="breed" maxLength={60} />
                 <Input
-                  label="Count"
-                  name="count"
-                  type="number"
-                  min="1"
-                  max="20"
-                  defaultValue="1"
+                  label="Breed / Type"
+                  name="breed"
+                  maxLength={60}
+                  placeholder="Shih Tzu"
                 />
                 <Button type="submit" size="sm">
                   Add pet
@@ -553,36 +631,52 @@ export default async function AdminMemberDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Listed pets</CardTitle>
+              <CardTitle>Registered pets</CardTitle>
               <CardDescription>
-                {member.pets.length} pet record
+                {member.pets.length} registered pet
                 {member.pets.length === 1 ? "" : "s"}.
               </CardDescription>
             </CardHeader>
-            <CardBody className="space-y-3">
+            <CardBody className="px-0 py-0">
               {member.pets.length === 0 ? (
-                <p className="text-sm text-muted">No pets listed.</p>
+                <EmptyState
+                  title="No pets registered"
+                  description="Register pets using the form on the left."
+                  className="mx-5 my-5"
+                />
               ) : (
-                member.pets.map((pet) => (
-                  <div
-                    key={pet.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-ink">
-                        {pet.name} · {pet.count}
-                      </p>
-                      <p className="text-xs text-muted">{pet.breed}</p>
-                    </div>
-                    <form action={removePetAction}>
-                      <input type="hidden" name="memberId" value={member.id} />
-                      <input type="hidden" name="id" value={pet.id} />
-                      <Button type="submit" size="sm" variant="ghost">
-                        Remove
-                      </Button>
-                    </form>
-                  </div>
-                ))
+                <TableWrapper>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Name</Th>
+                        <Th>Breed</Th>
+                        <Th>Action</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {member.pets.map((pet) => (
+                        <tr key={pet.id}>
+                          <Td className="font-medium text-ink">{pet.name}</Td>
+                          <Td>{pet.breed || "—"}</Td>
+                          <Td>
+                            <form action={removePetAction}>
+                              <input
+                                type="hidden"
+                                name="memberId"
+                                value={member.id}
+                              />
+                              <input type="hidden" name="id" value={pet.id} />
+                              <Button type="submit" size="sm" variant="ghost">
+                                Remove
+                              </Button>
+                            </form>
+                          </Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </TableWrapper>
               )}
             </CardBody>
           </Card>
@@ -595,7 +689,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Add vehicle</CardTitle>
               <CardDescription>
-                Plate numbers kept at the household.
+                Vehicles associated with this household.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -605,17 +699,8 @@ export default async function AdminMemberDetailPage({
                   label="Plate number"
                   name="plateNumber"
                   required
-                  minLength={3}
                   maxLength={20}
                   placeholder="ABC 1234"
-                />
-                <Input
-                  label="Count"
-                  name="count"
-                  type="number"
-                  min="1"
-                  max="20"
-                  defaultValue="1"
                 />
                 <Button type="submit" size="sm">
                   Add vehicle
@@ -626,38 +711,56 @@ export default async function AdminMemberDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Listed vehicles</CardTitle>
+              <CardTitle>Registered vehicles</CardTitle>
               <CardDescription>
-                {member.vehicles.length} vehicle
+                {member.vehicles.length} registered vehicle
                 {member.vehicles.length === 1 ? "" : "s"}.
               </CardDescription>
             </CardHeader>
-            <CardBody className="space-y-3">
+            <CardBody className="px-0 py-0">
               {member.vehicles.length === 0 ? (
-                <p className="text-sm text-muted">No vehicles listed.</p>
+                <EmptyState
+                  title="No vehicles registered"
+                  description="Register vehicles using the form on the left."
+                  className="mx-5 my-5"
+                />
               ) : (
-                member.vehicles.map((vehicle) => (
-                  <div
-                    key={vehicle.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line px-4 py-3"
-                  >
-                    <div>
-                      <p className="font-mono text-sm font-medium text-ink">
-                        {vehicle.plateNumber}
-                      </p>
-                      <p className="text-xs text-muted">
-                        Count: {vehicle.count}
-                      </p>
-                    </div>
-                    <form action={removeVehicleAction}>
-                      <input type="hidden" name="memberId" value={member.id} />
-                      <input type="hidden" name="id" value={vehicle.id} />
-                      <Button type="submit" size="sm" variant="ghost">
-                        Remove
-                      </Button>
-                    </form>
-                  </div>
-                ))
+                <TableWrapper>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Plate number</Th>
+                        <Th>Action</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {member.vehicles.map((vehicle) => (
+                        <tr key={vehicle.id}>
+                          <Td className="font-medium text-ink">
+                            {vehicle.plateNumber}
+                          </Td>
+                          <Td>
+                            <form action={removeVehicleAction}>
+                              <input
+                                type="hidden"
+                                name="memberId"
+                                value={member.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="id"
+                                value={vehicle.id}
+                              />
+                              <Button type="submit" size="sm" variant="ghost">
+                                Remove
+                              </Button>
+                            </form>
+                          </Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </TableWrapper>
               )}
             </CardBody>
           </Card>
@@ -667,9 +770,9 @@ export default async function AdminMemberDetailPage({
       {tab === "violations" ? (
         <Card>
           <CardHeader>
-            <CardTitle>Household violations</CardTitle>
+            <CardTitle>Violation history</CardTitle>
             <CardDescription>
-              Notices issued to this household or its residents.
+              Notices recorded for this household.
             </CardDescription>
           </CardHeader>
           <CardBody className="px-0 py-0">
@@ -684,31 +787,22 @@ export default async function AdminMemberDetailPage({
                 <Table>
                   <thead>
                     <tr>
-                      <Th>Violation</Th>
+                      <Th>Category</Th>
+                      <Th>Description</Th>
                       <Th>Issued</Th>
-                      <Th>Fine</Th>
                       <Th>Status</Th>
                     </tr>
                   </thead>
                   <tbody>
                     {household.violations.map((violation) => (
                       <tr key={violation.id}>
-                        <Td>
-                          <p className="font-medium text-ink">
-                            {violation.category}
-                          </p>
-                          <p className="mt-0.5 max-w-80 text-xs text-muted">
-                            {violation.description}
-                          </p>
+                        <Td className="font-medium text-ink">
+                          {violation.category}
                         </Td>
+                        <Td className="text-muted">{violation.description}</Td>
                         <Td>{formatDate(violation.issuedAt)}</Td>
-                        <Td className="tabular">
-                          {violation.fineAmount
-                            ? formatPeso(Number(violation.fineAmount))
-                            : "—"}
-                        </Td>
                         <Td>
-                          <Badge tone={violationTone[violation.status]}>
+                          <Badge tone={violationStatusTone[violation.status]}>
                             {violation.status}
                           </Badge>
                         </Td>
@@ -723,23 +817,65 @@ export default async function AdminMemberDetailPage({
       ) : null}
 
       <Card>
-        <CardBody className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <CardHeader>
+          <CardTitle>Portal login</CardTitle>
+          <CardDescription>
+            Resetting the password signs the resident out of every device.
+          </CardDescription>
+        </CardHeader>
+        <CardBody className="space-y-4">
           <div>
-            <p className="font-medium text-ink">Portal login</p>
-            <p className="text-muted">
+            <p className="text-sm text-muted">
               {household.account
-                ? `Username: ${household.account.username} · ${household.account.email} · ${household.account.status}`
+                ? `Username: ${household.account.username} · Status: ${household.account.status}`
                 : "No login linked to this household."}
             </p>
           </div>
-          <Link
-            href="/admin/members"
-            className={buttonStyles({ variant: "secondary", size: "sm" })}
-          >
-            Back to members
-          </Link>
+
+          {household.account ? (
+            <form
+              action={resetMemberPasswordAction}
+              className="max-w-sm space-y-3"
+            >
+              <input type="hidden" name="memberId" value={member.id} />
+              <input
+                type="hidden"
+                name="userId"
+                value={household.account.id}
+              />
+              <PasswordInput
+                label="New password"
+                name="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                maxLength={72}
+                hint="At least 8 characters with upper and lowercase letters and a number."
+              />
+              <PasswordInput
+                label="Confirm new password"
+                name="confirmPassword"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                maxLength={72}
+              />
+              <Button type="submit" size="sm">
+                Reset password
+              </Button>
+            </form>
+          ) : null}
         </CardBody>
       </Card>
+
+      <div className="flex justify-end">
+        <Link
+          href="/admin/members"
+          className={buttonStyles({ variant: "secondary", size: "sm" })}
+        >
+          Back to members
+        </Link>
+      </div>
     </div>
   );
 }

@@ -15,7 +15,7 @@ export default async function AdminAuditPage() {
   const logs = await prisma.auditLog.findMany({
     orderBy: { createdAt: "desc" },
     take: 100,
-    include: { actor: { select: { email: true } } },
+    include: { actor: { select: { username: true } } },
   });
 
   return (
@@ -69,7 +69,7 @@ export default async function AdminAuditPage() {
                           </span>
                         ) : null}
                       </Td>
-                      <Td>{log.actor?.email ?? "system"}</Td>
+                      <Td>{log.actor?.username ?? "system"}</Td>
                       <Td>
                         <span className="block max-w-72 break-words font-mono text-[11px] text-muted">
                           {log.metadata ? JSON.stringify(log.metadata) : "—"}

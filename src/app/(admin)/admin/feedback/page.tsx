@@ -40,7 +40,7 @@ export default async function AdminFeedbackPage({
     include: {
       user: {
         select: {
-          email: true,
+          username: true,
           household: { select: { unitAddress: true } },
         },
       },
@@ -81,7 +81,7 @@ export default async function AdminFeedbackPage({
                   <CardTitle>{item.subject || "Feedback"}</CardTitle>
                   <CardDescription>
                     {item.user.household?.unitAddress ?? "No household"} ·{" "}
-                    {item.user.email} · {formatDate(item.createdAt)}
+                    {item.user.username} · {formatDate(item.createdAt)}
                   </CardDescription>
                 </div>
                 <Badge tone={statusTone[item.status]}>

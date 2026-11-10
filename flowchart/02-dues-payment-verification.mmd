@@ -16,7 +16,7 @@ flowchart TD
 
   subgraph PAY["Homeowner - submit payment (/app/payments)"]
     P1(["Start: homeowner opens /app/payments"])
-    P2{"Is there an open due?<br/>UNPAID or PARTIALLY_PAID"}
+    P2{"Is there an open due?<br/>UNPAID"}
     P3[/"No open balance - show payment history only"/]
     P4[/"Scan the HOA GCash QR, enter amount,<br/>reference number, payment date, channel"/]
     P5{"Amount within the remaining balance?"}
@@ -34,7 +34,7 @@ flowchart TD
     V3[/"Only pending payments can be reviewed"/]
     V4{"Approve or reject?"}
     V5["Payment = PAID<br/>generate receipt RCPT-YYYY-XXXXXX"]
-    V6[("Recompute the Due:<br/>PAID if fully covered, else PARTIALLY_PAID")]
+    V6[("Recompute the Due:<br/>PAID if fully covered, else UNPAID")]
     V7["NOTIFY: payment approved + receipt, plus audit log"]
     V8[/"Enter rejection reason (3-300 characters)"/]
     V9[("Payment = REJECTED<br/>Due status unchanged")]
@@ -44,7 +44,7 @@ flowchart TD
 
   subgraph REM["System - reminder job (/api/cron/reminders or admin button)"]
     R1(["Start: cron fires or admin clicks Send reminders"])
-    R2["Find dues UNPAID or PARTIALLY_PAID<br/>with dueDate <= today + 30 days"]
+    R2["Find dues UNPAID<br/>with dueDate <= today + 30 days"]
     R3{"Balance still greater than zero?"}
     R4{{"Bucket by days left:<br/>OVERDUE / 1 day / 1 week / 1 month"}}
     R5{"Same reminder already logged?"}

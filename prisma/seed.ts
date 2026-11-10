@@ -92,7 +92,6 @@ async function main() {
       firstName: "Maria",
       lastName: "Santos",
       contactNumber: "09171000001",
-      email: "maria.santos@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
     },
     {
@@ -101,7 +100,6 @@ async function main() {
       firstName: "Liza",
       lastName: "Santos",
       contactNumber: "09171000002",
-      email: "liza.santos@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
     },
     {
@@ -110,7 +108,6 @@ async function main() {
       firstName: "Jose",
       lastName: "Reyes",
       contactNumber: "09171000003",
-      email: "jose.reyes@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
     },
     {
@@ -119,7 +116,6 @@ async function main() {
       firstName: "Ana",
       lastName: "Dela Cruz",
       contactNumber: "09171000004",
-      email: "ana.delacruz@example.test",
       occupancyType: "TENANT" as const,
     },
     {
@@ -128,7 +124,6 @@ async function main() {
       firstName: "Pedro",
       lastName: "Lim",
       contactNumber: "09171000005",
-      email: "pedro.lim@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
     },
     {
@@ -137,8 +132,8 @@ async function main() {
       firstName: "Rosa",
       lastName: "Garcia",
       contactNumber: "09171000006",
-      email: "rosa.garcia@example.test",
       occupancyType: "OWNER_OCCUPIED" as const,
+      status: "INACTIVE" as const,
     },
   ];
 
@@ -150,13 +145,14 @@ async function main() {
         firstName: member.firstName,
         lastName: member.lastName,
         contactNumber: member.contactNumber,
-        email: member.email,
         occupancyType: member.occupancyType,
+        status: member.status ?? "ACTIVE",
         consentVersion: CONSENT_VERSION,
         consentAt: monthDate(-2, 1),
       },
       create: {
         ...member,
+        status: member.status ?? "ACTIVE",
         consentVersion: CONSENT_VERSION,
         consentAt: monthDate(-2, 1),
       },
@@ -168,7 +164,6 @@ async function main() {
     {
       id: "usr_admin",
       username: "admin",
-      email: "admin@asialeaf.test",
       role: "ADMIN" as const,
       householdId: null,
       memberId: null,
@@ -176,7 +171,6 @@ async function main() {
     {
       id: "usr_treasurer",
       username: "treasurer",
-      email: "treasurer@asialeaf.test",
       role: "ADMIN" as const,
       householdId: null,
       memberId: null,
@@ -184,7 +178,6 @@ async function main() {
     {
       id: "usr_maria",
       username: "maria.santos",
-      email: "maria.santos@example.test",
       role: "HOMEOWNER" as const,
       householdId: "hh_001",
       memberId: "mem_maria",
@@ -192,7 +185,6 @@ async function main() {
     {
       id: "usr_jose",
       username: "jose.reyes",
-      email: "jose.reyes@example.test",
       role: "HOMEOWNER" as const,
       householdId: "hh_002",
       memberId: "mem_jose",
@@ -200,7 +192,6 @@ async function main() {
     {
       id: "usr_ana",
       username: "ana.delacruz",
-      email: "ana.delacruz@example.test",
       role: "HOMEOWNER" as const,
       householdId: "hh_003",
       memberId: "mem_ana",
@@ -208,7 +199,6 @@ async function main() {
     {
       id: "usr_pedro",
       username: "pedro.lim",
-      email: "pedro.lim@example.test",
       role: "HOMEOWNER" as const,
       householdId: "hh_004",
       memberId: "mem_pedro",
@@ -217,7 +207,7 @@ async function main() {
 
   for (const user of users) {
     await prisma.user.upsert({
-      where: { email: user.email },
+      where: { username: user.username },
       update: {
         id: user.id,
         username: user.username,
@@ -308,7 +298,7 @@ async function main() {
   const duePlans = [
     // household, month offset, status
     ["hh_001", 0, "PAID"],
-    ["hh_002", 0, "PARTIALLY_PAID"],
+    ["hh_002", 0, "UNPAID"],
     ["hh_003", 0, "UNPAID"],
     ["hh_004", 0, "PAID"],
     ["hh_005", 0, "UNPAID"],

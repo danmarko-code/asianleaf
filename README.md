@@ -15,7 +15,7 @@ violations, publish the budget report, answer feedback and inspect an audit log.
 - PostgreSQL + Prisma 6
 - Opaque session cookies, stored as SHA-256 hashes; bcrypt password hashes
 - GCash QR + manual treasurer verification (no receipt uploads)
-- Email/SMS provider interface with a console mock
+- SMS provider interface with a console mock
 
 ---
 
@@ -140,8 +140,7 @@ there is no public registration form.
    username and initial password with the resident.
 
 Duplicates are rejected: username, contact number and unit address must all be
-unused. A placeholder email is generated from the username and can be replaced
-later from the member record or the homeowner profile.
+unused. The login uses the username; no email address is collected.
 
 ### 2.3 Find and edit member records (admin)
 
@@ -164,8 +163,8 @@ later from the member record or the homeowner profile.
    skipped.
 3. Review billed, collected and outstanding totals and each household balance.
 4. Press **Run reminders now** to create in-app notifications and write the
-   outbound email/SMS to the server log. Reminders are de-duplicated per period
-   and repeat weekly while overdue.
+   outbound SMS to the contact number through the console log. Reminders are
+   de-duplicated per period and repeat weekly while overdue.
 5. Use **Waive** when a due should be cancelled.
 
 For automation, call the cron endpoint:
@@ -184,7 +183,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 3. Admin: open **Payments**, confirm the reference in GCash, then **Approve** or
    **Reject** with a reason.
 4. Approval marks the payment `PAID`, generates a receipt number, updates the
-   due to `PARTIALLY_PAID` or `PAID`, and notifies the homeowner.
+   due to `PAID` (if fully paid), and notifies the homeowner.
 
 ### 2.6 Issue violations (admin)
 
@@ -210,24 +209,21 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 3. Set the status (`New` → `In review` → `Resolved`) and write a reply note. The
    homeowner sees the note on `/app/feedback` and receives a notification.
 
-### 2.9 Profile and password (homeowner)
+### 2.9 Profile and password (homeowner + admin)
 
-- **Profile** (`/app/profile`): edit email and contact number; add or remove
+- **Profile** (`/app/profile`): edit the contact number; add or remove
   dependents, kasambahay, pets and vehicles. Unit details are admin-controlled.
-- **Change password** (`/app/change-password`): enter the current password,
-  request a 6-digit code, then set the new password. Codes expire in 5 minutes
-  and allow 5 attempts. Other sessions are signed out. With no email provider
-  configured, the code is shown in the interface and the server log in
-  development only.
-- **Forgot password** (`/forgot-password`): request a code by email and set a new
-  password. The form never reveals whether an email is registered.
+- **Password reset**: there is no self-service change-password or forgot-password
+  flow and no email/OTP step. An admin resets a password from the household
+  record: open **Members**, pick the resident, and use the **Portal login** card
+  to enter a new password. The reset signs that login out of every device.
 
 ### 2.10 Audit log (admin)
 
 **Audit log** lists the last 100 privileged actions with actor, entity and JSON
 metadata. Recorded actions include member creation, payment approval/rejection,
 violation changes, dues generation/waiving, reminder runs, member and household
-edits, budget entries, feedback updates and password changes.
+edits, budget entries, feedback updates and admin password resets.
 
 ---
 
@@ -246,11 +242,8 @@ edits, budget entries, feedback updates and password changes.
 | Homeowner | `ana.delacruz` |
 | Homeowner | `pedro.lim` |
 
-Each account also keeps an email address for records (`admin@asialeaf.test`,
-`maria.santos@example.test`, and so on), but sign-in uses the username.
-
-`rosa.garcia@example.test` belongs to a household with **no login**, which is
-useful for testing admin-only records.
+`rosa.garcia` belongs to a household with **no login**, which is useful for
+testing admin-only records.
 
 ### Households
 
@@ -275,7 +268,7 @@ useful for testing admin-only records.
 ### Dues and payments
 
 - **15 dues**: 5 households × current month, previous month and next month.
-- Current month statuses: `hh_001` paid, `hh_002` partially paid, `hh_003` unpaid,
+- Current month statuses: `hh_001` paid, `hh_002` unpaid, `hh_003` unpaid,
   `hh_004` paid, `hh_005` unpaid.
 - **10 payments**: verified full/partial payments for the current and previous
   months, plus two `PENDING` GCash claims:
@@ -381,10 +374,8 @@ session, expiry and status checks.
 
 - No official GCash QR image is bundled; the payment page shows “QR image
   pending” until the treasurer supplies one.
-- No outbound email/SMS provider is configured. Messages are logged by
+- No outbound SMS provider is configured. Messages are logged by
   `src/lib/messaging.ts`; replace that file with a real provider.
-- OTP codes are displayed in development only. In production they are only sent
-  through the messaging adapter, which must be configured first.
 - Receipt uploads are intentionally not supported.
 - The reminder job relies on an external scheduler (cron, Vercel Cron, or a
   `curl` job) calling `/api/cron/reminders`.

@@ -163,9 +163,9 @@ export default async function DesignPage() {
               <Input label="First name" defaultValue="Maria" />
               <Input label="Contact number" defaultValue="09171000001" />
               <Input
-                label="Email"
+                label="Username"
                 defaultValue="maria.santos"
-                error="Enter a valid email address."
+                error="Use at least 3 characters."
               />
               <Select label="Occupancy" defaultValue="OWNER_OCCUPIED">
                 <option value="OWNER_OCCUPIED">Owner</option>
@@ -211,7 +211,6 @@ export default async function DesignPage() {
             <Badge tone="neutral">Draft</Badge>
             <Badge tone="forest">Paid</Badge>
             <Badge tone="lime">Approved</Badge>
-            <Badge tone="warning">Partially paid</Badge>
             <Badge tone="danger">Overdue</Badge>
             <Badge tone="success">Settled</Badge>
           </div>

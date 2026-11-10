@@ -7,7 +7,7 @@ import { z } from "zod";
 import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
-import { CONTACT_NUMBER_PATTERN } from "@/lib/registration";
+import { CONTACT_NUMBER_PATTERN, isValidPersonName, NAME_ERROR } from "@/lib/registration";
 
 const contact = z.string().trim().regex(CONTACT_NUMBER_PATTERN);
 const name = z.string().trim().min(2).max(120);
@@ -27,41 +27,20 @@ export async function updateOwnContactAction(formData: FormData) {
 
   const parsed = z
     .object({
-      email: z.string().trim().toLowerCase().email().max(254),
       contactNumber: contact,
     })
     .safeParse({
-      email: formData.get("email"),
       contactNumber: formData.get("contactNumber"),
     });
 
   if (!parsed.success) {
-    back("Enter a valid email address and an 11-digit contact number.", "error");
+    back("Enter an 11-digit contact number.", "error");
   }
 
-  try {
-    await prisma.$transaction(async (tx) => {
-      await tx.member.update({
-        where: { id: user.memberId! },
-        data: parsed.data,
-      });
-
-      if (user.email !== parsed.data.email) {
-        await tx.user.update({
-          where: { id: user.id },
-          data: { email: parsed.data.email },
-        });
-      }
-    });
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      back("That email address is already used by another account.", "error");
-    }
-    throw error;
-  }
+  await prisma.member.update({
+    where: { id: user.memberId! },
+    data: parsed.data,
+  });
 
   await logAudit({
     actorUserId: user.id,
@@ -87,6 +66,7 @@ export async function addOwnHouseholdMemberAction(formData: FormData) {
     });
 
   if (!parsed.success) back("Enter a full name and relationship.", "error");
+  if (!isValidPersonName(parsed.data.fullName)) back(NAME_ERROR, "error");
 
   await prisma.householdMember.create({
     data: {
@@ -127,8 +107,13 @@ export async function addOwnKasambahayAction(formData: FormData) {
     });
 
   if (!parsed.success) {
-    back("Enter a full name and an 11-digit contact number.", "error");
+    back(
+      "Enter a full name. The contact number is optional, but if given it must be 11 digits.",
+      "error",
+    );
   }
+
+  if (!isValidPersonName(parsed.data.fullName)) back(NAME_ERROR, "error");
 
   await prisma.kasambahay.create({
     data: {

@@ -70,7 +70,7 @@ export async function approvePaymentAction(formData: FormData) {
     await tx.due.update({
       where: { id: payment.dueId },
       data: {
-        status: total >= Number(payment.due.amount) ? "PAID" : "PARTIALLY_PAID",
+        status: total >= Number(payment.due.amount) ? "PAID" : "UNPAID",
       },
     });
 
