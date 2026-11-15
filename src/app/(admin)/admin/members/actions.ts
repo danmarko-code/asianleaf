@@ -1,7 +1,6 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -14,6 +13,8 @@ import {
   OTHER_STREET,
 } from "@/lib/locations";
 import { CONTACT_NUMBER_PATTERN, isValidPersonName, NAME_ERROR } from "@/lib/registration";
+import { saveVehicleRecord } from "@/lib/vehicle-store";
+import { parseVehicleForm, type VehicleFormState } from "@/lib/vehicles";
 
 const idSchema = z.string().min(1);
 const contact = z.string().trim().regex(CONTACT_NUMBER_PATTERN);
@@ -339,48 +340,26 @@ export async function removePetAction(formData: FormData) {
   back(memberId, "pets", "Pet removed.");
 }
 
-export async function addVehicleAction(formData: FormData) {
+export async function saveVehicleAction(
+  _state: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
   await requireRole("ADMIN");
   const memberId = requireMemberId(formData);
-  const parsed = z
-    .object({
-      plateNumber: z.string().trim().min(3).max(20),
-      count: z.coerce.number().int().min(1).max(20),
-    })
-    .safeParse({
-      plateNumber: formData.get("plateNumber"),
-      count: formData.get("count") || 1,
-    });
+  const parsed = parseVehicleForm({
+    vehicleType: formData.get("vehicleType"),
+    plateNumber: formData.get("plateNumber"),
+    brandModel: formData.get("brandModel"),
+    color: formData.get("color"),
+  });
+  if (!parsed.ok) return parsed.state;
 
-  if (!parsed.success) {
-    back(
-      memberId,
-      "vehicles",
-      "Enter a plate number and a count of at least 1.",
-      "error",
-    );
-  }
-
-  try {
-    await prisma.vehicle.create({
-      data: {
-        memberId,
-        plateNumber: parsed.data.plateNumber.toUpperCase(),
-        count: parsed.data.count,
-      },
-    });
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      back(memberId, "vehicles", "That plate number is already listed.", "error");
-    }
-    throw error;
-  }
+  const id = String(formData.get("id") ?? "").trim() || undefined;
+  const failure = await saveVehicleRecord({ memberId, id, data: parsed.data });
+  if (failure) return failure;
 
   refresh(memberId);
-  back(memberId, "vehicles", "Vehicle added.");
+  return { status: "success", message: id ? "Vehicle updated." : "Vehicle added." };
 }
 
 export async function removeVehicleAction(formData: FormData) {

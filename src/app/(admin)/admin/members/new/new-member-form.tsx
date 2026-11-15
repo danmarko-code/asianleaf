@@ -21,11 +21,31 @@ import {
   NAME_ERROR,
   NAME_INPUT_PATTERN,
 } from "@/lib/registration";
+import {
+  VEHICLE_TYPES,
+  normalizeVehiclePlate,
+  parseVehicleForm,
+  plateCopy,
+} from "@/lib/vehicles";
 
 type Person = { fullName: string; relationship: string };
 type Pet = { name: string; breed: string };
-type Vehicle = { plateNumber: string };
+type Vehicle = {
+  vehicleType: string;
+  plateNumber: string;
+  brandModel: string;
+  color: string;
+};
 type Kasambahay = { fullName: string; contactNumber: string };
+
+function vehicleRowHasValue(row: Vehicle) {
+  return Boolean(
+    row.vehicleType.trim() ||
+      row.plateNumber.trim() ||
+      row.brandModel.trim() ||
+      row.color.trim(),
+  );
+}
 
 const NAME_INPUT_TITLE =
   "Use letters, spaces, hyphens, apostrophes or periods only. At least 2 letters.";
@@ -77,6 +97,9 @@ export function NewMemberForm() {
   const [kasambahayErrors, setKasambahayErrors] = useState<
     Record<number, string>
   >({});
+  const [vehicleErrors, setVehicleErrors] = useState<
+    Record<number, Record<string, string>>
+  >({});
 
   const [unit, setUnit] = useState({
     street: STREETS[0] as string,
@@ -89,6 +112,20 @@ export function NewMemberForm() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [kasambahay, setKasambahay] = useState<Kasambahay[]>([]);
+
+  // Row inputs share no unique name, so the vehicle errors are kept by index.
+  function updateVehicle(index: number, patch: Partial<Vehicle>) {
+    setError(null);
+    setVehicles((rows) =>
+      rows.map((item, rowIndex) => (rowIndex === index ? { ...item, ...patch } : item)),
+    );
+    setVehicleErrors((current) => {
+      if (!current[index]) return current;
+      const next = { ...current };
+      delete next[index];
+      return next;
+    });
+  }
 
   const passwordChecks = [
     { label: "At least 8 characters", met: password.length >= 8 },
@@ -138,9 +175,12 @@ export function NewMemberForm() {
         breed: row.breed.trim() || undefined,
       })),
     vehicles: vehicles
-      .filter((row) => row.plateNumber.trim())
+      .filter(vehicleRowHasValue)
       .map((row) => ({
-        plateNumber: row.plateNumber.trim(),
+        vehicleType: row.vehicleType,
+        plateNumber: normalizeVehiclePlate(row.vehicleType, row.plateNumber),
+        brandModel: row.brandModel.trim(),
+        color: row.color.trim(),
       })),
     kasambahay: kasambahay
       .filter((row) => row.fullName.trim())
@@ -241,6 +281,24 @@ export function NewMemberForm() {
     }
     setKasambahayErrors(nextKasambahayErrors);
 
+    const nextVehicleErrors: Record<number, Record<string, string>> = {};
+    vehicles.forEach((row, index) => {
+      if (!vehicleRowHasValue(row)) return;
+      const result = parseVehicleForm({
+        vehicleType: row.vehicleType,
+        plateNumber: normalizeVehiclePlate(row.vehicleType, row.plateNumber),
+        brandModel: row.brandModel,
+        color: row.color,
+      });
+      if (!result.ok) {
+        nextVehicleErrors[index] = result.state.fieldErrors ?? {};
+      }
+    });
+    if (Object.keys(nextVehicleErrors).length > 0) {
+      nextErrors.vehicles = "Check the vehicle details.";
+    }
+    setVehicleErrors(nextVehicleErrors);
+
     if (Object.keys(nextErrors).length > 0) {
       shouldFocusError.current = true;
       setFieldErrors(nextErrors);
@@ -257,6 +315,10 @@ export function NewMemberForm() {
       if (result?.fieldErrors && Object.keys(result.fieldErrors).length > 0) {
         shouldFocusError.current = true;
         setFieldErrors(result.fieldErrors);
+      }
+
+      if (result?.vehicleErrors) {
+        setVehicleErrors(result.vehicleErrors);
       }
 
       if (result?.error) {
@@ -732,41 +794,90 @@ export function NewMemberForm() {
 
           <RepeatableSection
             title="Vehicles"
-            description="List the plate numbers kept at the household."
+            description="List the vehicles kept at the household."
             actionLabel="Add vehicle"
-            onAdd={() => setVehicles((rows) => [...rows, { plateNumber: "" }])}
+            onAdd={() =>
+              setVehicles((rows) => [
+                ...rows,
+                { vehicleType: "", plateNumber: "", brandModel: "", color: "" },
+              ])
+            }
             empty={vehicles.length === 0}
           >
             {vehicles.map((row, index) => (
               <div
                 key={index}
-                className="grid gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_auto]"
+                className="grid gap-3 rounded-md border border-line p-3"
               >
-                <Input
-                  label="Plate number"
-                  value={row.plateNumber}
-                  onChange={(event) =>
-                    setVehicles((rows) =>
-                      rows.map((item, rowIndex) =>
-                        rowIndex === index
-                          ? { ...item, plateNumber: event.target.value }
-                          : item,
-                      ),
-                    )
-                  }
-                  maxLength={20}
-                  placeholder="ABC 1234"
-                />
-                <div className="flex items-end">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Select
+                    label="Vehicle type"
+                    value={row.vehicleType}
+                    onChange={(event) =>
+                      updateVehicle(index, { vehicleType: event.target.value })
+                    }
+                    error={vehicleErrors[index]?.vehicleType}
+                  >
+                    <option value="">Select vehicle type</option>
+                    {VEHICLE_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    label="Plate number"
+                    value={row.plateNumber}
+                    onChange={(event) =>
+                      updateVehicle(index, { plateNumber: event.target.value })
+                    }
+                    onBlur={(event) =>
+                      updateVehicle(index, {
+                        plateNumber: normalizeVehiclePlate(
+                          row.vehicleType,
+                          event.target.value,
+                        ),
+                      })
+                    }
+                    maxLength={15}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    placeholder={plateCopy(row.vehicleType).placeholder}
+                    hint={plateCopy(row.vehicleType).hint}
+                    error={vehicleErrors[index]?.plateNumber}
+                  />
+                  <Input
+                    label="Brand / model"
+                    value={row.brandModel}
+                    onChange={(event) =>
+                      updateVehicle(index, { brandModel: event.target.value })
+                    }
+                    maxLength={60}
+                    placeholder="e.g., Toyota Vios"
+                    error={vehicleErrors[index]?.brandModel}
+                  />
+                  <Input
+                    label="Color"
+                    value={row.color}
+                    onChange={(event) =>
+                      updateVehicle(index, { color: event.target.value })
+                    }
+                    maxLength={30}
+                    placeholder="e.g., Silver"
+                    error={vehicleErrors[index]?.color}
+                  />
+                </div>
+                <div className="flex justify-end">
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() =>
+                    onClick={() => {
                       setVehicles((rows) =>
                         rows.filter((_, rowIndex) => rowIndex !== index),
-                      )
-                    }
+                      );
+                      setVehicleErrors({});
+                    }}
                   >
                     Remove
                   </Button>

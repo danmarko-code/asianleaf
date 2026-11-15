@@ -3,11 +3,11 @@ import {
   addOwnHouseholdMemberAction,
   addOwnKasambahayAction,
   addOwnPetAction,
-  addOwnVehicleAction,
   removeOwnHouseholdMemberAction,
   removeOwnKasambahayAction,
   removeOwnPetAction,
   removeOwnVehicleAction,
+  saveOwnVehicleAction,
   updateOwnContactAction,
 } from "@/app/(homeowner)/app/profile/actions";
 import { Alert } from "@/components/ui/alert";
@@ -21,9 +21,11 @@ import {
 } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
+import { VehicleForm } from "@/components/vehicles/vehicle-form";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NAME_INPUT_PATTERN, NAME_ERROR } from "@/lib/registration";
+import { vehicleTypeLabel } from "@/lib/vehicles";
 
 export const metadata: Metadata = { title: "Household profile" };
 
@@ -39,7 +41,6 @@ export default async function HomeownerProfilePage({
     return (
       <div className="space-y-5">
         <PageHeader
-          eyebrow="Household"
           title="Profile"
           description="Your login is not linked to a member record yet."
         />
@@ -66,7 +67,6 @@ export default async function HomeownerProfilePage({
     return (
       <div className="space-y-5">
         <PageHeader
-          eyebrow="Household"
           title="Profile"
           description="Member record not found."
         />
@@ -83,9 +83,7 @@ export default async function HomeownerProfilePage({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Household"
         title="Profile"
-        description="Contact details, kasambahay, pets, vehicles and household members."
       />
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
@@ -324,47 +322,42 @@ export default async function HomeownerProfilePage({
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
-          <form action={addOwnVehicleAction} className="space-y-3">
-            <Input
-              label="Plate number"
-              name="plateNumber"
-              required
-              minLength={3}
-              maxLength={20}
-              placeholder="ABC 1234"
-            />
-            <Input
-              label="Count"
-              name="count"
-              type="number"
-              min="1"
-              max="20"
-              defaultValue="1"
-            />
-            <Button type="submit" size="sm" variant="secondary">
-              Add vehicle
-            </Button>
-          </form>
+          <VehicleForm action={saveOwnVehicleAction} resetOnSuccess />
 
           {member.vehicles.length > 0 ? (
             <ul className="divide-y divide-line border-t border-line pt-2">
               {member.vehicles.map((vehicle) => (
-                <li
-                  key={vehicle.id}
-                  className="flex flex-wrap items-center justify-between gap-2 py-3"
-                >
-                  <div>
-                    <p className="font-mono text-sm font-medium text-ink">
-                      {vehicle.plateNumber}
-                    </p>
-                    <p className="text-xs text-muted">Count: {vehicle.count}</p>
+                <li key={vehicle.id} className="space-y-2 py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-mono text-sm font-medium text-ink">
+                        {vehicle.plateNumber}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {vehicleTypeLabel(vehicle.vehicleType)} ·{" "}
+                        {vehicle.brandModel} · {vehicle.color}
+                      </p>
+                    </div>
+                    <form action={removeOwnVehicleAction}>
+                      <input type="hidden" name="id" value={vehicle.id} />
+                      <Button type="submit" size="sm" variant="ghost">
+                        Remove
+                      </Button>
+                    </form>
                   </div>
-                  <form action={removeOwnVehicleAction}>
-                    <input type="hidden" name="id" value={vehicle.id} />
-                    <Button type="submit" size="sm" variant="ghost">
-                      Remove
-                    </Button>
-                  </form>
+                  <details>
+                    <summary className="cursor-pointer text-xs font-medium text-forest">
+                      Edit details
+                    </summary>
+                    <div className="mt-3">
+                      <VehicleForm
+                        action={saveOwnVehicleAction}
+                        vehicle={vehicle}
+                        hiddenFields={{ id: vehicle.id }}
+                        submitLabel="Save changes"
+                      />
+                    </div>
+                  </details>
                 </li>
               ))}
             </ul>

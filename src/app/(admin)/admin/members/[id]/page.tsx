@@ -5,13 +5,13 @@ import {
   addHouseholdMemberAction,
   addKasambahayAction,
   addPetAction,
-  addVehicleAction,
   deleteMemberAction,
   removeHouseholdMemberAction,
   removeKasambahayAction,
   removePetAction,
   removeVehicleAction,
   resetMemberPasswordAction,
+  saveVehicleAction,
   updateHouseholdUnitAction,
   updateMemberAction,
 } from "@/app/(admin)/admin/members/actions";
@@ -29,12 +29,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input, PasswordInput, Select } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
+import { VehicleForm } from "@/components/vehicles/vehicle-form";
 import { requireRole } from "@/lib/auth";
 import { formatDate, formatMonthDay } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import { OTHER_STREET, STREETS } from "@/lib/locations";
 import { formatPeso } from "@/lib/money";
 import { NAME_INPUT_PATTERN, NAME_ERROR } from "@/lib/registration";
+import { vehicleTypeLabel } from "@/lib/vehicles";
 
 export const metadata: Metadata = { title: "Member record" };
 
@@ -693,19 +695,11 @@ export default async function AdminMemberDetailPage({
               </CardDescription>
             </CardHeader>
             <CardBody>
-              <form action={addVehicleAction} className="space-y-4">
-                <input type="hidden" name="memberId" value={member.id} />
-                <Input
-                  label="Plate number"
-                  name="plateNumber"
-                  required
-                  maxLength={20}
-                  placeholder="ABC 1234"
-                />
-                <Button type="submit" size="sm">
-                  Add vehicle
-                </Button>
-              </form>
+              <VehicleForm
+                action={saveVehicleAction}
+                hiddenFields={{ memberId: member.id }}
+                resetOnSuccess
+              />
             </CardBody>
           </Card>
 
@@ -717,50 +711,59 @@ export default async function AdminMemberDetailPage({
                 {member.vehicles.length === 1 ? "" : "s"}.
               </CardDescription>
             </CardHeader>
-            <CardBody className="px-0 py-0">
+            <CardBody className="space-y-3">
               {member.vehicles.length === 0 ? (
                 <EmptyState
                   title="No vehicles registered"
                   description="Register vehicles using the form on the left."
-                  className="mx-5 my-5"
+                  className="mx-0 my-0"
                 />
               ) : (
-                <TableWrapper>
-                  <Table>
-                    <thead>
-                      <tr>
-                        <Th>Plate number</Th>
-                        <Th>Action</Th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {member.vehicles.map((vehicle) => (
-                        <tr key={vehicle.id}>
-                          <Td className="font-medium text-ink">
-                            {vehicle.plateNumber}
-                          </Td>
-                          <Td>
-                            <form action={removeVehicleAction}>
-                              <input
-                                type="hidden"
-                                name="memberId"
-                                value={member.id}
-                              />
-                              <input
-                                type="hidden"
-                                name="id"
-                                value={vehicle.id}
-                              />
-                              <Button type="submit" size="sm" variant="ghost">
-                                Remove
-                              </Button>
-                            </form>
-                          </Td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                </TableWrapper>
+                member.vehicles.map((vehicle) => (
+                  <div
+                    key={vehicle.id}
+                    className="rounded-md border border-line p-3"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-mono text-sm font-medium text-ink">
+                          {vehicle.plateNumber}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {vehicleTypeLabel(vehicle.vehicleType)} ·{" "}
+                          {vehicle.brandModel} · {vehicle.color}
+                        </p>
+                      </div>
+                      <form action={removeVehicleAction}>
+                        <input
+                          type="hidden"
+                          name="memberId"
+                          value={member.id}
+                        />
+                        <input type="hidden" name="id" value={vehicle.id} />
+                        <Button type="submit" size="sm" variant="ghost">
+                          Remove
+                        </Button>
+                      </form>
+                    </div>
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-xs font-medium text-forest">
+                        Edit details
+                      </summary>
+                      <div className="mt-3">
+                        <VehicleForm
+                          action={saveVehicleAction}
+                          vehicle={vehicle}
+                          hiddenFields={{
+                            memberId: member.id,
+                            id: vehicle.id,
+                          }}
+                          submitLabel="Save changes"
+                        />
+                      </div>
+                    </details>
+                  </div>
+                ))
               )}
             </CardBody>
           </Card>

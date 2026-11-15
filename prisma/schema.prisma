@@ -210,11 +210,15 @@ model Vehicle {
   id          String   @id @default(cuid())
   memberId    String
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  vehicleType String   @default("OTHER")
   plateNumber String
+  brandModel  String   @default("Not specified")
+  color       String   @default("Not specified")
   count       Int      @default(1)
   createdAt   DateTime @default(now())
 
-  @@unique([memberId, plateNumber])
+  // Uniqueness is a partial index in SQL: plate numbers are unique per member
+  // except the "N/A" placeholder used by e-bikes without LTO registration.
   @@index([memberId])
 }
 
