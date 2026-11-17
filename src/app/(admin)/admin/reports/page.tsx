@@ -48,9 +48,8 @@ export default async function ReportsPage({
     <div className="space-y-6">
       <div className="print:hidden">
         <PageHeader
-          eyebrow="Reporting"
           title="Reports"
-          description="Export or print the lists the association needs: unpaid dues, inactive members, open violations and payments."
+          description="Print or download lists for dues, members, violations and payments."
         />
       </div>
 
@@ -80,8 +79,7 @@ export default async function ReportsPage({
         <CardHeader>
           <CardTitle>Filters</CardTitle>
           <CardDescription>
-            Dates apply to the payment date, violation issue date and due date
-            depending on the report. Leave blank for everything.
+            Pick a date range, or leave it blank to see everything.
           </CardDescription>
         </CardHeader>
         <CardBody>
@@ -148,7 +146,7 @@ export default async function ReportsPage({
           {table.rows.length === 0 ? (
             <EmptyState
               title="Nothing to report"
-              description="No records match this report and date range."
+              description="No records match these filters."
               className="mx-5 my-5"
             />
           ) : (

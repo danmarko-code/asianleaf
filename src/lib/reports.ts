@@ -201,13 +201,9 @@ export async function buildReport(
     take: 2000,
     include: {
       channel: true,
-      due: {
+      household: {
         include: {
-          household: {
-            include: {
-              members: { take: 1, orderBy: { createdAt: "asc" } },
-            },
-          },
+          members: { take: 1, orderBy: { createdAt: "asc" } },
         },
       },
     },
@@ -230,11 +226,11 @@ export async function buildReport(
       "Submitted",
     ],
     rows: payments.map((payment) => {
-      const member = payment.due.household.members[0];
+      const member = payment.household.members[0];
       return [
-        payment.due.household.unitAddress,
+        payment.household.unitAddress,
         member ? `${member.firstName} ${member.lastName}` : "No member",
-        payment.referenceNumber,
+        payment.referenceNumber ?? "",
         payment.receiptNumber ?? "",
         payment.method,
         payment.channel?.name ?? "",

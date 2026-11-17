@@ -1,0 +1,48 @@
+flowchart LR
+    ADMIN(["Administrator<br/>Association Officer"])
+    TREAS(["Association Treasurer<br/>ADMIN account"])
+    RES(["Homeowner / Tenant<br/>Resident"])
+    CRON(["External Scheduler<br/>Cron Job"])
+    SMS(["SMS Gateway<br/>Console Mock"])
+
+    subgraph SYS["Asianleaf System"]
+        direction TB
+        UC01(["Sign In and Open Role Workspace"])
+        UC02(["Create Household and Portal Login"])
+        UC03(["Search and Maintain Member Records"])
+        UC04(["Generate Monthly Dues"])
+        UC05(["Dispatch Due Reminders"])
+        UC06(["Submit GCash Payment Claim"])
+        UC07(["Verify or Reject Payment"])
+        UC08(["Issue Violation Notice"])
+        UC09(["Close Violation Notice"])
+        UC10(["Publish Budget Transparency Report"])
+        UC11(["Submit Resident Feedback"])
+        UC12(["Resolve Feedback and Reply"])
+        UC13(["Update Own Profile and Property Records"])
+        UC14(["Reset Household Portal Password"])
+        UC15(["Export and Print Administrative Reports"])
+        UC16(["Review Audit Trail"])
+    end
+
+    ADMIN --- UC01
+    ADMIN --- UC02
+    ADMIN --- UC03
+    ADMIN --- UC04
+    ADMIN --- UC05
+    ADMIN --- UC08
+    ADMIN --- UC09
+    ADMIN --- UC10
+    ADMIN --- UC12
+    ADMIN --- UC14
+    ADMIN --- UC15
+    ADMIN --- UC16
+    TREAS --- UC07
+    TREAS --- UC10
+    TREAS --- UC15
+    RES --- UC01
+    RES --- UC06
+    RES --- UC11
+    RES --- UC13
+    CRON --- UC05
+    UC05 --- SMS

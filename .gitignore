@@ -10,3 +10,8 @@ dist/
 coverage/
 playwright-report/
 test-results/
+
+graphify-out/
+
+# Runtime uploads (receipts) are not source
+public/uploads/

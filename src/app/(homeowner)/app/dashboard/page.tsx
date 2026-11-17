@@ -1,41 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRightIcon } from "@/components/icons";
-import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { buttonStyles } from "@/components/ui/button";
 import {
-  Card,
-  CardBody,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
+  AlertIcon,
+  ChartIcon,
+  CheckIcon,
+  MessageIcon,
+  WalletIcon,
+} from "@/components/icons";
+import { Alert } from "@/components/ui/alert";
+import { Card, CardBody } from "@/components/ui/card";
+import { Hero } from "@/components/ui/hero";
 import { requireRole } from "@/lib/auth";
-import { MONTHLY_DUES } from "@/lib/constants";
-import { formatDate, formatMonthDay, greetingForHour, manilaNow } from "@/lib/dates";
+import { formatDate, greetingForHour, manilaNow } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import { formatPeso } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Home" };
 
-const links = [
-  {
-    href: "/app/profile",
-    title: "Household profile",
-    description: "Contact details, kasambahay, pets, vehicles and household members.",
-  },
-  {
-    href: "/app/budget",
-    title: "Transparency report",
-    description: "See the association income and expenses posted by the treasurer.",
-  },
-  {
-    href: "/app/feedback",
-    title: "Send feedback",
-    description: "Report an issue or suggest an improvement to the association.",
-  },
+const actions = [
+  { href: "/app/payments", label: "Payments", icon: WalletIcon },
+  { href: "/app/violations", label: "Notices", icon: AlertIcon },
+  { href: "/app/budget", label: "Budget", icon: ChartIcon },
+  { href: "/app/feedback", label: "Feedback", icon: MessageIcon },
 ];
 
 export default async function HomeownerDashboardPage() {
@@ -47,14 +33,8 @@ export default async function HomeownerDashboardPage() {
   if (!householdId) {
     return (
       <div className="space-y-5">
-        <PageHeader
-          eyebrow="Asian Leaf HOA"
-          title={`${greeting}, ${name}.`}
-          description="Your account is not linked to a household yet."
-        />
-        <Alert tone="warning" title="Household link missing">
-          Contact the association office so your login can be linked to your
-          unit.
+        <Alert tone="warning" title="Your account isn’t linked yet">
+          Please contact the HOA office so we can connect your account to your home.
         </Alert>
       </div>
     );
@@ -62,16 +42,10 @@ export default async function HomeownerDashboardPage() {
 
   const [due, openViolations, notifications] = await Promise.all([
     prisma.due.findFirst({
-      where: {
-        householdId,
-        status: "UNPAID",
-      },
+      where: { householdId, status: "UNPAID" },
       orderBy: { dueDate: "asc" },
       include: {
-        payments: {
-          where: { status: "PAID" },
-          select: { amount: true },
-        },
+        payments: { where: { status: "PAID" }, select: { amount: true } },
       },
     }),
     prisma.violation.findMany({
@@ -81,7 +55,7 @@ export default async function HomeownerDashboardPage() {
     prisma.notification.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
-      take: 5,
+      take: 3,
     }),
   ]);
 
@@ -93,16 +67,38 @@ export default async function HomeownerDashboardPage() {
   const violation = openViolations[0];
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        eyebrow="Asian Leaf HOA"
-        title={`${greeting}, ${name}.`}
-        description={
-          user.household?.unitAddress
-            ? `${user.household.unitAddress}. Here is your household at a glance.`
-            : "Here is your household at a glance."
-        }
-      />
+    <div className="space-y-4">
+      <h1 className="sr-only">Home</h1>
+      <p className="font-serif text-3xl font-semibold tracking-tight text-ink">
+        {greeting}, {name}
+      </p>
+
+      <Hero>
+        <p className="text-sm opacity-80">
+          {due ? "Balance due" : "Your dues"}
+        </p>
+        <p className="tabular mt-1 font-serif text-5xl font-semibold tracking-tight">
+          {formatPeso(due ? balance : 0)}
+        </p>
+        {due ? (
+          <>
+            <p className="mt-1 text-sm opacity-80">
+              Due {formatDate(due.dueDate)}
+            </p>
+            <Link
+              href="/app/payments"
+              className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-lime text-sm font-semibold text-[#1a220f] sm:w-auto sm:px-8"
+            >
+              Pay now
+            </Link>
+          </>
+        ) : (
+          <p className="mt-2 inline-flex items-center gap-1.5 text-sm">
+            <CheckIcon className="h-4 w-4" />
+            You’re all paid up
+          </p>
+        )}
+      </Hero>
 
       {violation ? (
         <Alert
@@ -113,184 +109,58 @@ export default async function HomeownerDashboardPage() {
               : `Warning: ${violation.category}`
           }
         >
-          <p>{violation.description}</p>
-          <p className="mt-2 text-xs">
-            Issued {formatDate(violation.issuedAt)}
-            {violation.fineAmount
-              ? ` · Fine ${formatPeso(Number(violation.fineAmount))}`
-              : ""}
-            {violation.dueDate
-              ? ` · Due ${formatMonthDay(violation.dueDate)}`
-              : ""}
-          </p>
           <Link
             href="/app/violations"
-            className="mt-2 inline-block text-sm font-medium text-forest underline underline-offset-4"
+            className="text-sm font-medium underline underline-offset-4"
           >
-            View violation details
+            {openViolations.length === 1
+              ? "View the notice"
+              : `View all ${openViolations.length} notices`}
           </Link>
         </Alert>
       ) : null}
 
-      <Card>
-        <CardHeader className="flex items-center justify-between gap-3">
-          <div>
-            <CardTitle>{due ? "Next dues" : "Dues"}</CardTitle>
-            <CardDescription>
-              Billed per household on the 5th of each month.
-            </CardDescription>
-          </div>
-          <Badge tone={due ? "warning" : "success"}>
-            {due ? "Unpaid" : "Paid up"}
-          </Badge>
-        </CardHeader>
-        <CardBody>
-          {due ? (
-            <>
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="tabular font-serif text-4xl text-forest">
-                  {formatPeso(balance)}
-                </p>
-                <span className="text-sm text-muted">
-                  Remaining balance of {formatPeso(Number(due.amount))}
-                </span>
-              </div>
-
-              {/* Payment Visual Progress Bar */}
-              <div className="mt-4 space-y-1.5">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-ink">
-                    {Math.round(((Number(due.amount) - balance) / Number(due.amount)) * 100)}% Paid
-                  </span>
-                  <span className="text-muted tabular">
-                    Paid {formatPeso(Number(due.amount) - balance)} / {formatPeso(Number(due.amount))}
-                  </span>
-                </div>
-                <div className="h-3 w-full overflow-hidden rounded-full bg-line/60">
-                  <div
-                    className="h-full rounded-full bg-forest transition-all duration-500"
-                    style={{
-                      width: `${Math.max(
-                        0,
-                        Math.min(
-                          100,
-                          Math.round(((Number(due.amount) - balance) / Number(due.amount)) * 100),
-                        ),
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              <p className="mt-3 text-sm text-muted">
-                Billing period starts {formatMonthDay(due.periodStart)}. Due{" "}
-                {formatMonthDay(due.dueDate)}. Full dues are{" "}
-                {formatPeso(Number(due.amount))}.
-              </p>
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <Link href="/app/payments" className={buttonStyles()}>
-                  Pay dues
-                </Link>
-                <p className="text-xs text-muted">
-                  Scan the HOA GCash QR, then submit your reference number for
-                  verification.
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="tabular font-serif text-4xl text-forest">
-                  {formatPeso(0)}
-                </p>
-                <span className="text-sm font-medium text-forest">
-                  100% Settled
-                </span>
-              </div>
-
-              {/* Settled Visual Progress Bar */}
-              <div className="mt-4 space-y-1.5">
-                <div className="h-3 w-full overflow-hidden rounded-full bg-forest/15">
-                  <div className="h-full w-full rounded-full bg-forest" />
-                </div>
-              </div>
-
-              <p className="mt-3 text-sm text-muted">
-                No open balance right now. All dues are settled. The next billing
-                period will open at {formatPeso(MONTHLY_DUES)}.
-              </p>
-              <div className="mt-5">
-                <Link
-                  href="/app/payments"
-                  className={buttonStyles({ variant: "secondary" })}
-                >
-                  View payment history
-                </Link>
-              </div>
-            </>
-          )}
-        </CardBody>
-      </Card>
-
-      {openViolations.length > 1 ? (
-        <p className="text-sm text-muted">
-          You have {openViolations.length} open violations.{" "}
-          <Link
-            href="/app/violations"
-            className="text-forest underline underline-offset-4"
-          >
-            Review all
-          </Link>
-        </p>
-      ) : null}
+      <div className="grid grid-cols-4 gap-2 sm:gap-3">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={action.label}
+              href={action.href}
+              className="tile flex flex-col items-center gap-2 rounded-lg border border-line bg-surface px-1 py-3 text-center sm:p-4"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-forest-soft text-forest">
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="text-xs font-medium text-ink">
+                {action.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
 
       {notifications.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notifications</CardTitle>
-            <CardDescription>
-              Dues reminders and updates from the association.
-            </CardDescription>
-          </CardHeader>
-          <CardBody className="space-y-3">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="rounded-md border border-line px-4 py-3"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-ink">
-                    {notification.title}
-                  </p>
-                  {notification.readAt ? null : (
-                    <Badge tone="warning">New</Badge>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-muted">{notification.body}</p>
-                <p className="mt-1 text-[11px] text-muted">
-                  {formatDate(notification.createdAt)}
-                </p>
-              </div>
-            ))}
-          </CardBody>
+        <Card className="divide-y divide-line">
+          <p className="px-5 pb-2 pt-4 font-serif text-lg font-semibold tracking-tight text-ink">
+            Latest updates
+          </p>
+          {notifications.map((notification) => (
+            <CardBody
+              key={notification.id}
+              className="flex items-center justify-between gap-3 py-3"
+            >
+              <p className="min-w-0 truncate text-sm text-ink">
+                {notification.title}
+              </p>
+              <span className="shrink-0 text-[11px] text-muted">
+                {formatDate(notification.createdAt)}
+              </span>
+            </CardBody>
+          ))}
         </Card>
       ) : null}
 
-      <Card className="divide-y divide-line">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-cream"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-ink">{link.title}</p>
-              <p className="mt-1 text-xs text-muted">{link.description}</p>
-            </div>
-            <ArrowRightIcon className="h-4 w-4 shrink-0 text-muted" />
-          </Link>
-        ))}
-      </Card>
     </div>
   );
 }

@@ -1,0 +1,80 @@
+flowchart LR
+    E1["E1 Administrator /<br/>Association Officer"]
+    E2["E2 Homeowner /<br/>Tenant Resident"]
+    E3["E3 External Scheduler"]
+    E4["E4 SMS Gateway<br/>(Console Mock)"]
+
+    P1(("1.0<br/>Authenticate and<br/>Authorize Session"))
+    P2(("2.0<br/>Manage Household<br/>and Member Records"))
+    P3(("3.0<br/>Generate Dues and<br/>Dispatch Reminders"))
+    P4(("4.0<br/>Process Payment<br/>Submission and Verification"))
+    P5(("5.0<br/>Issue and Close<br/>Violation Notices"))
+    P6(("6.0<br/>Maintain Budget<br/>Transparency and Reports"))
+    P7(("7.0<br/>Handle Feedback<br/>and Notifications"))
+    P8(("8.0<br/>Record Audit Trail"))
+
+    D1[("D1 User / Session")]
+    D2[("D2 Household / Member /<br/>Dependent / Kasambahay /<br/>Pet / Vehicle")]
+    D3[("D3 Due")]
+    D4[("D4 PaymentChannel / Payment")]
+    D5[("D5 ReminderLog / Notification")]
+    D6[("D6 Violation")]
+    D7[("D7 BudgetEntry")]
+    D8[("D8 Feedback")]
+    D9[("D9 AuditLog")]
+
+    E1 -- "F1 Credentials" --> P1
+    E2 -- "F1 Credentials" --> P1
+    P1 -- "F1 Session and role redirect" --> E1
+    P1 -- "F1 Session and role redirect" --> E2
+    P1 -- "Read / write session" --> D1
+
+    E1 -- "F2 Household registration payload" --> P2
+    P2 -- "F11 Member records" --> E1
+    P2 -- "Write / edit records" --> D2
+    E2 -- "Profile and property updates" --> P2
+
+    E1 -- "F3 Billing period request" --> P3
+    E3 -- "F4 Reminder trigger" --> P3
+    P3 -- "F4 Job result" --> E3
+    P3 -- "Create dues" --> D3
+    P3 -- "Read unpaid dues and paid totals" --> D3
+    P3 -- "Write reminder log and notification" --> D5
+    P3 -- "F5 Reminder text message" --> E4
+
+    E2 -- "F6 Payment claim" --> P4
+    E1 -- "F7 Verification decision" --> P4
+    P4 -- "Write pending or reviewed payment" --> D4
+    P4 -- "Recompute due status" --> D3
+    P4 -- "Queue and outcome" --> E1
+    P4 -- "Receipt and payment notices" --> D5
+    P4 -- "F11 Payment history" --> E2
+
+    E1 -- "F8 Violation notice" --> P5
+    P5 -- "Write notice and resolution" --> D6
+    P5 -- "F11 Notice alert" --> E2
+
+    E1 -- "F9 Budget entry and report request" --> P6
+    P6 -- "Write / delete entries" --> D7
+    P6 -- "Read dues, payments, members, violations" --> D3
+    P6 -- "Read payment and member data" --> D4
+    P6 -- "Read member register" --> D2
+    P6 -- "Read notices" --> D6
+    P6 -- "F9 Transparency list, print view, CSV" --> E1
+    P6 -- "F9 Read-only transparency list" --> E2
+
+    E2 -- "F10 Feedback message" --> P7
+    E1 -- "F10 Feedback status and reply" --> P7
+    P7 -- "Write feedback and note" --> D8
+    P7 -- "Write notification" --> D5
+    P7 -- "F10 Reply notification" --> E2
+
+    P1 -- "F12 Actor identity" --> P8
+    P2 -- "F12 Audit entry" --> P8
+    P3 -- "F12 Audit entry" --> P8
+    P4 -- "F12 Audit entry" --> P8
+    P5 -- "F12 Audit entry" --> P8
+    P6 -- "F12 Audit entry" --> P8
+    P7 -- "F12 Audit entry" --> P8
+    P8 -- "Append record" --> D9
+    P8 -- "F12 Audit entries" --> E1

@@ -5,7 +5,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-forest text-white hover:bg-ink dark:bg-lime dark:text-[#1a220f] dark:hover:bg-leaf",
+  primary: "bg-forest text-white shadow-card hover:bg-ink dark:bg-lime dark:text-[#1a220f] dark:hover:bg-leaf",
   secondary: "border border-line bg-surface text-ink hover:bg-forest-soft",
   ghost: "text-forest hover:bg-forest-soft",
   danger: "bg-red text-white hover:bg-ink dark:text-ink dark:hover:bg-red-soft dark:hover:text-red",
@@ -26,7 +26,7 @@ export function buttonStyles({
   className?: string;
 } = {}) {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-[background-color,color,transform] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
     variants[variant],
     sizes[size],
     className,

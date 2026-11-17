@@ -61,6 +61,14 @@ export function formatDate(date: Date) {
   }).format(date);
 }
 
+export function formatTime(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Manila",
+  }).format(date);
+}
+
 export function todayInputValue() {
   const { year, month, day } = manilaNow();
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;

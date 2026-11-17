@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   generateDuesAction,
   runRemindersAction,
@@ -6,7 +7,7 @@ import {
 } from "@/app/(admin)/admin/dues/actions";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonStyles } from "@/components/ui/button";
 import {
   Card,
   CardBody,
@@ -24,8 +25,10 @@ import { formatMonthDay } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import {
   currentMonthKey,
+  formatMonthKey,
   isValidMonthKey,
   periodFromMonthKey,
+  shiftMonthKey,
 } from "@/lib/dues";
 import { formatPeso } from "@/lib/money";
 
@@ -88,9 +91,8 @@ export default async function AdminDuesPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Collections"
         title="Dues and reminders"
-        description="Generate the monthly billing run, track balances and send reminders."
+        description="Create monthly bills and remind households to pay."
       />
 
       {query.notice ? <Alert tone="success">{query.notice}</Alert> : null}
@@ -100,7 +102,7 @@ export default async function AdminDuesPage({
         <StatCard
           label="Households"
           value={String(households)}
-          hint="Every household is billed."
+          hint="Same for every household"
         />
         <StatCard
           label="Billed this month"
@@ -110,7 +112,7 @@ export default async function AdminDuesPage({
         <StatCard
           label="Collected"
           value={formatPeso(collected)}
-          hint="Approved payments only."
+          hint="From approved payments"
         />
         <StatCard
           label="Outstanding"
@@ -123,7 +125,7 @@ export default async function AdminDuesPage({
         <CardHeader>
           <CardTitle>Billing run</CardTitle>
           <CardDescription>
-            Generation is safe to repeat; existing dues are skipped.
+            Create this month’s bills. Running it twice won’t double-bill anyone.
           </CardDescription>
         </CardHeader>
         <CardBody className="grid gap-4 lg:grid-cols-2">
@@ -132,7 +134,9 @@ export default async function AdminDuesPage({
               label="Billing month"
               name="month"
               type="month"
+              min={currentMonthKey()}
               defaultValue={month}
+              hint="Choose this month or a future month."
               required
             />
             <Button type="submit" size="sm">
@@ -145,12 +149,11 @@ export default async function AdminDuesPage({
             <div>
               <p className="text-sm font-medium text-ink">Send reminders</p>
               <p className="mt-1 text-xs text-muted">
-                Creates in-app notices and writes the outbound message to the
-                server log. Already-sent reminders are skipped.
+                Notify households with unpaid dues. No one gets the same reminder twice.
               </p>
             </div>
             <Button type="submit" size="sm" variant="secondary">
-              Run reminders now
+              Send now
             </Button>
           </form>
         </CardBody>
@@ -158,18 +161,40 @@ export default async function AdminDuesPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Dues for {month}</CardTitle>
-          <CardDescription>
-            {rows.length === 0
-              ? "No dues generated for this month yet."
-              : `${rows.length} household${rows.length === 1 ? "" : "s"} billed.`}
-          </CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Dues for {formatMonthKey(month)}</CardTitle>
+              <CardDescription>
+                {rows.length === 0
+                  ? "No bills created for this month yet."
+                  : `${rows.length} household${rows.length === 1 ? "" : "s"} billed.`}
+              </CardDescription>
+            </div>
+            {/* Past periods stay browsable here even though they can no longer
+                be generated. */}
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/admin/dues?month=${shiftMonthKey(month, -1)}`}
+                className={buttonStyles({ variant: "secondary", size: "sm" })}
+                aria-label="Previous month"
+              >
+                ‹ Prev
+              </Link>
+              <Link
+                href={`/admin/dues?month=${shiftMonthKey(month, 1)}`}
+                className={buttonStyles({ variant: "secondary", size: "sm" })}
+                aria-label="Next month"
+              >
+                Next ›
+              </Link>
+            </div>
+          </div>
         </CardHeader>
         <CardBody className="px-0 py-0">
           {rows.length === 0 ? (
             <EmptyState
               title="No dues for this month"
-              description="Choose a billing month above and generate the run."
+              description="Choose a month above and create the bills."
               className="mx-5 my-5"
             />
           ) : (

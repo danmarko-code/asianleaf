@@ -11,7 +11,7 @@ export function TableWrapper({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("w-full overflow-x-auto", className)} {...props} />
+    <div className={cn("w-full overflow-x-auto rounded-lg", className)} {...props} />
   );
 }
 
@@ -22,7 +22,7 @@ export function Table({
   return (
     <table
       className={cn(
-        "w-full min-w-[640px] border-collapse text-left text-sm",
+        "w-full min-w-[640px] border-collapse text-left text-sm [&_tbody_tr:hover]:bg-cream [&_tbody_tr:last-child_td]:border-b-0 [&_tbody_tr]:transition-colors",
         className,
       )}
       {...props}
@@ -34,7 +34,7 @@ export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
   return (
     <th
       className={cn(
-        "whitespace-nowrap border-b border-line bg-cream px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted",
+        "whitespace-nowrap border-b border-line bg-surface px-4 py-3 text-xs font-medium text-muted",
         className,
       )}
       {...props}
@@ -45,7 +45,7 @@ export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
 export function Td({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn("border-b border-line px-4 py-3 align-top", className)}
+      className={cn("border-b border-line px-4 py-3.5 align-middle", className)}
       {...props}
     />
   );

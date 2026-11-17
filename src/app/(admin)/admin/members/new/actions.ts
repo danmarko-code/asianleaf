@@ -28,6 +28,8 @@ export type CreateMemberState = {
   fieldErrors?: Record<string, string>;
   // Keyed by the row index the wizard rendered it under.
   vehicleErrors?: Record<number, Record<string, string>>;
+  // Set instead of redirecting when the form runs inside the members modal.
+  created?: { username: string };
 };
 
 const usernameSchema = z
@@ -385,6 +387,11 @@ export async function createMemberAction(
 
   revalidatePath("/admin/members");
   revalidatePath("/admin/dashboard");
+
+  // The members modal closes and refreshes the list instead of navigating.
+  if (formData.get("inline") === "1") {
+    return { created: { username: parsed.data.username } };
+  }
 
   redirect(
     `/admin/members/${memberId}?notice=${encodeURIComponent(

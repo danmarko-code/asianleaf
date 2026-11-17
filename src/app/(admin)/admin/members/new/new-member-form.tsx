@@ -81,7 +81,23 @@ function invalidFieldMessage(field: HTMLInputElement | HTMLSelectElement | HTMLT
   return field.validationMessage || "Check this field.";
 }
 
-export function NewMemberForm() {
+const STEPS = [
+  "Account and login",
+  "Primary resident",
+  "Unit",
+  "People and property",
+];
+
+export function NewMemberForm({
+  inline = false,
+  onCancel,
+  onCreated,
+}: {
+  // Rendered inside the members modal: no page navigation on success.
+  inline?: boolean;
+  onCancel?: () => void;
+  onCreated?: (username: string) => void;
+} = {}) {
   const formRef = useRef<HTMLFormElement>(null);
   const shouldFocusError = useRef(false);
   const [pending, startTransition] = useTransition();
@@ -97,6 +113,7 @@ export function NewMemberForm() {
   const [kasambahayErrors, setKasambahayErrors] = useState<
     Record<number, string>
   >({});
+  const [step, setStep] = useState(0);
   const [vehicleErrors, setVehicleErrors] = useState<
     Record<number, Record<string, string>>
   >({});
@@ -241,6 +258,65 @@ export function NewMemberForm() {
     field.focus({ preventScroll: true });
   }, [fieldErrors]);
 
+  // Steps differ in height, so put the reader back at the top of the
+  // scrollable modal body (or the page when rendered standalone) once the new
+  // step has rendered. Doing this in an effect beats the browser's own scroll
+  // anchoring, which would otherwise keep the old position.
+  useEffect(() => {
+    const scroller = formRef.current?.parentElement;
+    if (scroller) scroller.scrollTop = 0;
+    window.scrollTo({ top: 0 });
+  }, [step]);
+
+  function goBack() {
+    setError(null);
+    setStep((current) => Math.max(0, current - 1));
+  }
+
+  // Only the visible step is checked, so Next never blocks on a later section.
+  function goNext() {
+    if (!formRef.current) return;
+
+    const errors: Record<string, string> = {};
+    if (step === 0 && !passwordMeetsRequirements) {
+      errors.password =
+        "Use a password with at least 8 characters, upper and lowercase letters, and a number.";
+    }
+    if (step === 0 && !passwordsMatch) {
+      errors.confirmPassword = "The passwords do not match.";
+    }
+    if (step === 1 && !isValidPersonName(firstName)) {
+      errors.firstName = NAME_ERROR;
+    }
+    if (step === 1 && !isValidPersonName(lastName)) {
+      errors.lastName = NAME_ERROR;
+    }
+    if (step === 1 && !isValidContactNumber(contactNumber)) {
+      errors.contactNumber = "Enter an 11-digit contact number.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      shouldFocusError.current = true;
+      setFieldErrors((current) => ({ ...current, ...errors }));
+      return;
+    }
+
+    const section = formRef.current.querySelector<HTMLElement>(
+      `[data-step="${step}"]`,
+    );
+    for (const field of section?.querySelectorAll<HTMLElement>("input, select") ??
+      []) {
+      if (!(field as HTMLInputElement).checkValidity()) {
+        shouldFocusError.current = true;
+        (field as HTMLInputElement).reportValidity();
+        return;
+      }
+    }
+
+    setError(null);
+    setStep((current) => Math.min(STEPS.length - 1, current + 1));
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending || !formRef.current) return;
@@ -324,6 +400,10 @@ export function NewMemberForm() {
       if (result?.error) {
         setError(result.error);
       }
+
+      if (result?.created) {
+        onCreated?.(result.created.username);
+      }
     });
   }
 
@@ -336,6 +416,7 @@ export function NewMemberForm() {
       className="space-y-6"
     >
       <input type="hidden" name="payload" value={payload} />
+      {inline ? <input type="hidden" name="inline" value="1" /> : null}
 
       {error ? (
         <div aria-live="polite">
@@ -343,12 +424,15 @@ export function NewMemberForm() {
         </div>
       ) : null}
 
-      <Card>
+      <p className="text-sm font-medium text-muted">
+        Step {step + 1} of {STEPS.length} · {STEPS[step]}
+      </p>
+
+      <Card data-step="0" className={step === 0 ? undefined : "hidden"}>
         <CardHeader>
           <CardTitle>Account and login</CardTitle>
           <CardDescription>
-            The resident uses this username and password to sign in. Share the
-            credentials with them after saving.
+            Share these with the resident after saving so they can sign in.
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
@@ -363,7 +447,7 @@ export function NewMemberForm() {
             maxLength={30}
             pattern="[a-z0-9._\-]{3,30}"
             placeholder="e.g. maria.santos"
-            hint="3–30 characters. Lowercase letters, numbers, dots, dashes and underscores only."
+            hint="3–30 characters. Lowercase letters, numbers, dots, dashes or underscores."
             error={fieldErrors.username}
           />
 
@@ -415,11 +499,11 @@ export function NewMemberForm() {
         </CardBody>
       </Card>
 
-      <Card>
+      <Card data-step="1" className={step === 1 ? undefined : "hidden"}>
         <CardHeader>
           <CardTitle>Primary resident</CardTitle>
           <CardDescription>
-            Contact details for the household member who holds the login.
+            The main contact for this household.
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
@@ -432,7 +516,7 @@ export function NewMemberForm() {
               maxLength={60}
               pattern={NAME_INPUT_PATTERN}
               title={NAME_INPUT_TITLE}
-              hint="Letters, spaces, hyphens, apostrophes or periods only."
+              hint="Letters, spaces, hyphens or apostrophes."
               error={firstNameError}
               value={firstName}
               nameOnly
@@ -447,7 +531,7 @@ export function NewMemberForm() {
               maxLength={60}
               pattern={NAME_INPUT_PATTERN}
               title={NAME_INPUT_TITLE}
-              hint="Letters, spaces, hyphens, apostrophes or periods only."
+              hint="Letters, spaces, hyphens or apostrophes."
               error={lastNameError}
               value={lastName}
               nameOnly
@@ -468,7 +552,7 @@ export function NewMemberForm() {
               maxLength={11}
               pattern="[0-9]{11}"
               placeholder="09171234567"
-              hint="11-digit mobile number used for due reminders."
+              hint="11 digits. We’ll send dues reminders here."
               error={contactError}
               value={contactNumber}
               onlyDigits
@@ -490,11 +574,11 @@ export function NewMemberForm() {
         </CardBody>
       </Card>
 
-      <Card>
+      <Card data-step="2" className={step === 2 ? undefined : "hidden"}>
         <CardHeader>
           <CardTitle>Unit</CardTitle>
           <CardDescription>
-            Street, block and lot identify the household record.
+            Where this household lives.
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
@@ -568,7 +652,7 @@ export function NewMemberForm() {
           </div>
 
           <div className="rounded-md border border-dashed border-line bg-cream px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+            <p className="text-sm font-medium text-muted">
               Unit address
             </p>
             <p className="mt-1 text-sm text-ink">
@@ -578,18 +662,17 @@ export function NewMemberForm() {
         </CardBody>
       </Card>
 
-      <Card>
+      <Card data-step="3" className={step === 3 ? undefined : "hidden"}>
         <CardHeader>
           <CardTitle>People and property</CardTitle>
           <CardDescription>
-            Add only what applies to this household. Each section can be left
-            empty.
+            Add family, helpers, pets and vehicles. Skip anything that doesn’t apply.
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-6">
           <RepeatableSection
             title="Other household members"
-            description="Dependents or relatives living in the unit."
+            description="Family or relatives living in the home."
             actionLabel="Add household member"
             onAdd={() =>
               setHouseholdMembers((rows) => [
@@ -663,7 +746,7 @@ export function NewMemberForm() {
 
           <RepeatableSection
             title="Kasambahay"
-            description="Household help staying or working at the unit."
+            description="Household helpers living or working in the home."
             actionLabel="Add kasambahay"
             onAdd={() =>
               setKasambahay((rows) => [
@@ -736,7 +819,7 @@ export function NewMemberForm() {
 
           <RepeatableSection
             title="Pets"
-            description="List each pet kept at the unit."
+            description="Pets living in the home."
             actionLabel="Add pet"
             onAdd={() => setPets((rows) => [...rows, { name: "", breed: "" }])}
             empty={pets.length === 0}
@@ -794,7 +877,7 @@ export function NewMemberForm() {
 
           <RepeatableSection
             title="Vehicles"
-            description="List the vehicles kept at the household."
+            description="Vehicles owned by the household."
             actionLabel="Add vehicle"
             onAdd={() =>
               setVehicles((rows) => [
@@ -888,16 +971,62 @@ export function NewMemberForm() {
         </CardBody>
       </Card>
 
-      <div className="flex flex-col gap-3 sm:flex-row-reverse">
-        <Button type="submit" className="sm:flex-1" isLoading={pending}>
-          Create member and login
-        </Button>
-        <Link
-          href="/admin/members"
-          className={buttonStyles({ variant: "secondary", className: "sm:flex-1" })}
-        >
-          Cancel
-        </Link>
+      {/* Pinned to the bottom of the modal body so the controls stay reachable
+          while a long step scrolls behind them. */}
+      <div className="sticky bottom-0 z-10 -mx-5 -mb-4 mt-6 flex items-center justify-between gap-3 border-t border-line bg-surface px-5 py-3">
+        {step === 0 ? (
+          onCancel ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+          ) : (
+            <Link
+              href="/admin/members"
+              className={buttonStyles({
+                variant: "secondary",
+                size: "sm",
+              })}
+            >
+              Cancel
+            </Link>
+          )
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={goBack}
+          >
+            ← Back
+          </Button>
+        )}
+
+        {step < STEPS.length - 1 ? (
+          // The key forces a fresh element: without it React reuses this <button>
+          // node and patches type="button" into type="submit" mid-click, so the
+          // browser then runs the new submit default action.
+          <Button
+            key="next"
+            type="button"
+            size="sm"
+            onClick={(event) => {
+              // Belt and braces: never let a navigation click submit the form.
+              event.preventDefault();
+              goNext();
+            }}
+          >
+            Next →
+          </Button>
+        ) : (
+          <Button key="save" type="submit" size="sm" isLoading={pending}>
+            {inline ? "Save member" : "Create member and login"}
+          </Button>
+        )}
       </div>
     </form>
   );

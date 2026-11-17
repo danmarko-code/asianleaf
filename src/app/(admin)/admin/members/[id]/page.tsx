@@ -120,7 +120,6 @@ export default async function AdminMemberDetailPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Member record"
         title={`${member.firstName} ${member.lastName}`}
         description={`${household.unitAddress} · ${occupancyLabels[member.occupancyType]}`}
         actions={
@@ -163,7 +162,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Edit resident details</CardTitle>
               <CardDescription>
-                Primary resident name, contact number and status.
+                Update the resident’s name, contact number and status.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -233,7 +232,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Household unit</CardTitle>
               <CardDescription>
-                Block and lot identify the unit.
+                Where this household lives.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -262,7 +261,7 @@ export default async function AdminMemberDetailPage({
                         name="customStreet"
                         defaultValue={household.street ?? ""}
                         maxLength={80}
-                        hint="Used when the street is not in the list."
+                        hint="Use this if the street isn’t in the list."
                       />
                     </div>
                   ) : null}
@@ -294,14 +293,14 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Recent dues</CardTitle>
               <CardDescription>
-                Latest billing periods for this household.
+                The latest bills for this household.
               </CardDescription>
             </CardHeader>
             <CardBody className="px-0 py-0">
               {household.dues.length === 0 ? (
                 <EmptyState
                   title="No dues yet"
-                  description="Generate monthly dues from the Dues page."
+                  description="Create monthly bills from the Dues page."
                   className="mx-5 my-5"
                 />
               ) : (
@@ -360,7 +359,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle className="text-red">Delete member record</CardTitle>
               <CardDescription>
-                Permanently delete this resident from the association directory.
+                This permanently removes the resident. It can’t be undone.
               </CardDescription>
             </CardHeader>
             <CardBody className="space-y-4">
@@ -386,7 +385,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Primary resident</CardTitle>
               <CardDescription>
-                The household account holder.
+                The main contact for this household.
               </CardDescription>
             </CardHeader>
             <CardBody className="space-y-1 text-sm">
@@ -404,7 +403,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Add household member</CardTitle>
               <CardDescription>
-                Dependents or relatives living in the unit.
+                Family or relatives living in the home.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -452,7 +451,7 @@ export default async function AdminMemberDetailPage({
               {member.occupants.length === 0 ? (
                 <EmptyState
                   title="No household members listed"
-                  description="Add dependents or other occupants using the form above."
+                  description="Add family members using the form above."
                   className="mx-5 my-5"
                 />
               ) : (
@@ -506,7 +505,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Add kasambahay</CardTitle>
               <CardDescription>
-                Household staff registered with this address.
+                Household helpers living or working in the home.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -530,7 +529,7 @@ export default async function AdminMemberDetailPage({
                   maxLength={11}
                   pattern="[0-9]{11}"
                   placeholder="Optional"
-                  hint="Optional. If given, use 11 digits."
+                  hint="Optional. Use 11 digits."
                 />
                 <Button type="submit" size="sm">
                   Add kasambahay
@@ -551,7 +550,7 @@ export default async function AdminMemberDetailPage({
               {member.kasambahay.length === 0 ? (
                 <EmptyState
                   title="No kasambahay registered"
-                  description="Add household staff using the form on the left."
+                  description="Add one using the form."
                   className="mx-5 my-5"
                 />
               ) : (
@@ -605,7 +604,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Add pet</CardTitle>
               <CardDescription>
-                Pets kept at the unit address.
+                Pets living in the home.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -643,7 +642,7 @@ export default async function AdminMemberDetailPage({
               {member.pets.length === 0 ? (
                 <EmptyState
                   title="No pets registered"
-                  description="Register pets using the form on the left."
+                  description="Add one using the form."
                   className="mx-5 my-5"
                 />
               ) : (
@@ -691,7 +690,7 @@ export default async function AdminMemberDetailPage({
             <CardHeader>
               <CardTitle>Add vehicle</CardTitle>
               <CardDescription>
-                Vehicles associated with this household.
+                Vehicles owned by the household.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -715,7 +714,7 @@ export default async function AdminMemberDetailPage({
               {member.vehicles.length === 0 ? (
                 <EmptyState
                   title="No vehicles registered"
-                  description="Register vehicles using the form on the left."
+                  description="Add one using the form."
                   className="mx-0 my-0"
                 />
               ) : (
@@ -775,7 +774,7 @@ export default async function AdminMemberDetailPage({
           <CardHeader>
             <CardTitle>Violation history</CardTitle>
             <CardDescription>
-              Notices recorded for this household.
+              All notices issued to this household.
             </CardDescription>
           </CardHeader>
           <CardBody className="px-0 py-0">
@@ -823,7 +822,7 @@ export default async function AdminMemberDetailPage({
         <CardHeader>
           <CardTitle>Portal login</CardTitle>
           <CardDescription>
-            Resetting the password signs the resident out of every device.
+            Set a new password if the resident forgot theirs. They’ll be signed out everywhere.
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
@@ -853,7 +852,7 @@ export default async function AdminMemberDetailPage({
                 required
                 minLength={8}
                 maxLength={72}
-                hint="At least 8 characters with upper and lowercase letters and a number."
+                hint="At least 8 characters, with upper and lowercase letters and a number."
               />
               <PasswordInput
                 label="Confirm new password"

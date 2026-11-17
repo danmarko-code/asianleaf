@@ -25,7 +25,7 @@ export function Alert({
     <div
       role={tone === "danger" ? "alert" : "status"}
       className={cn(
-        "rounded-md border-l-2 px-4 py-3 text-sm text-ink",
+        "rounded-lg border-l-4 px-4 py-3 text-sm text-ink",
         tones[tone],
         className,
       )}

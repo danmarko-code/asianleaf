@@ -1,0 +1,52 @@
+flowchart TB
+    subgraph DEV["Client Devices"]
+        MOB["Mobile Phone Browser<br/>320 px and up"]
+        DESK["Desktop / Tablet Browser"]
+    end
+
+    subgraph PRES["Presentation Layer — Next.js 15.5 App Router + React 19.3 + Tailwind 3.4"]
+        AUI["Officer Workspace<br/>/admin/*"]
+        RUI["Resident Workspace<br/>/app/*"]
+        AUTHUI["Sign-in<br/>/login"]
+    end
+
+    subgraph APP["Application Layer"]
+        MW["Middleware<br/>cookie presence guard"]
+        SESS["Session and RBAC<br/>requireUser / requireRole"]
+        ACT["Server Actions<br/>Zod validation + transactions"]
+        DOM["Domain Services<br/>dues, reminders, reports,<br/>registration, vehicles, messaging"]
+        API["Route Handlers<br/>/api/health, /api/cron/reminders,<br/>/admin/reports/export"]
+        AUD["Audit Writer<br/>logAudit"]
+    end
+
+    subgraph DATA["Data Layer — PostgreSQL 15+ / Prisma 6.19.3"]
+        DB[("Asianleaf Database<br/>User, Session, Household, Member,<br/>Kasambahay, Pet, Vehicle, HouseholdMember,<br/>Due, PaymentChannel, Payment, ReminderLog,<br/>BudgetEntry, Notification, Feedback,<br/>Violation, AuditLog")]
+    end
+
+    subgraph EXT["External Services and Devices"]
+        GCASH["GCash App<br/>manual fund transfer"]
+        CRON["External Scheduler<br/>CRON_SECRET bearer"]
+        SMS["SMS Provider Boundary<br/>console mock in messaging.ts"]
+    end
+
+    MOB --> PRES
+    DESK --> PRES
+    AUTHUI --> MW
+    AUI --> MW
+    RUI --> MW
+    MW --> SESS
+    SESS --> ACT
+    PRES --> ACT
+    ACT --> DOM
+    ACT --> DB
+    DOM --> DB
+    API --> DOM
+    API --> DB
+    ACT --> AUD
+    AUD --> DB
+    GCASH -. "resident pays outside system" .-> RUI
+    RUI -. "reference number submitted" .-> ACT
+    CRON -- "Bearer token" --> API
+    API -- "reminder job" --> DOM
+    DOM -- "reminder text" --> SMS
+    DB -- "rendered pages" --> PRES

@@ -1,0 +1,29 @@
+flowchart LR
+    E1["E1 Administrator /<br/>Association Officer"]
+    E2["E2 Homeowner /<br/>Tenant Resident"]
+    E3["E3 External Scheduler<br/>(Cron Job)"]
+    E4["E4 SMS Gateway<br/>(Console Mock Provider)"]
+
+    P0(("0<br/>Asianleaf<br/>HOA Portal"))
+
+    E1 -- "F1 Credentials" --> P0
+    P0 -- "F1 Role workspace and session" --> E1
+    E1 -- "F2 Household registration payload" --> P0
+    P0 -- "F11 Member records, collection totals, verification queue, reports" --> E1
+    E1 -- "F3 Billing period request" --> P0
+    E1 -- "F7 Verification decision" --> P0
+    E1 -- "F8 Violation notice" --> P0
+    E1 -- "F9 Budget entry and report request" --> P0
+    E1 -- "F10 Feedback status and reply" --> P0
+    P0 -- "F12 Audit entries" --> E1
+
+    E2 -- "F1 Credentials" --> P0
+    P0 -- "F1 Role workspace and session" --> E2
+    E2 -- "F6 Payment claim" --> P0
+    E2 -- "F10 Feedback message" --> P0
+    P0 -- "F11 Balance, red notice alert, notifications, transparency list, feedback reply" --> E2
+
+    E3 -- "F4 Reminder trigger" --> P0
+    P0 -- "F4 Job result: sent / skipped / checked" --> E3
+
+    P0 -- "F5 Reminder text message" --> E4

@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { createViolationAction } from "@/app/(admin)/admin/violations/actions";
+import { initialViolationState } from "@/app/(admin)/admin/violations/form-state";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/form";
 import { todayInputValue } from "@/lib/dates";
+import { MAX_CATEGORY_DETAIL, OTHER_CATEGORY, VIOLATION_CATEGORIES } from "@/lib/violations";
 
 type Household = {
   id: string;
@@ -13,9 +16,14 @@ type Household = {
 };
 
 export function ViolationForm({ households }: { households: Household[] }) {
+  const [state, formAction, pending] = useActionState(
+    createViolationAction,
+    initialViolationState,
+  );
   const [householdId, setHouseholdId] = useState(households[0]?.id ?? "");
   const [memberId, setMemberId] = useState("");
   const [kind, setKind] = useState<"WARNING" | "PAYMENT_REQUIRED">("WARNING");
+  const [category, setCategory] = useState("");
   const [violationDate, setViolationDate] = useState(todayInputValue());
   const [paymentDueDate, setPaymentDueDate] = useState("");
   const [dueDateError, setDueDateError] = useState("");
@@ -40,10 +48,12 @@ export function ViolationForm({ households }: { households: Household[] }) {
 
   return (
     <form
-      action={createViolationAction}
+      action={formAction}
       className="space-y-4"
       onSubmit={handleSubmit}
     >
+      {state.error ? <Alert tone="danger">{state.error}</Alert> : null}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <Select
           label="Household"
@@ -67,7 +77,7 @@ export function ViolationForm({ households }: { households: Household[] }) {
           name="memberId"
           value={memberId}
           onChange={(event) => setMemberId(event.target.value)}
-          hint="Leave blank to address the whole household."
+          hint="Leave blank for the whole household."
         >
           <option value="">Whole household</option>
           {household?.members.map((member) => (
@@ -101,14 +111,33 @@ export function ViolationForm({ households }: { households: Household[] }) {
           required
         />
 
-        <Input
+        <Select
           label="Category"
           name="category"
           required
-          minLength={2}
-          maxLength={100}
-          placeholder="e.g. No vehicle sticker"
-        />
+          value={category}
+          onChange={(event) => setCategory(event.target.value)}
+          error={state.fieldErrors?.category}
+        >
+          <option value="" disabled>
+            Select violation category...
+          </option>
+          {VIOLATION_CATEGORIES.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </Select>
+
+        {category === OTHER_CATEGORY ? (
+          <Input
+            label="Specify category"
+            name="categoryDetail"
+            maxLength={MAX_CATEGORY_DETAIL}
+            placeholder="e.g. Stray dogs inside the pool area"
+            hint="Optional. Adds detail to the category."
+          />
+        ) : null}
 
         {kind === "PAYMENT_REQUIRED" ? (
           <>
@@ -150,7 +179,9 @@ export function ViolationForm({ households }: { households: Household[] }) {
         placeholder="Explain what the resident needs to do or settle."
       />
 
-      <Button type="submit">Issue violation</Button>
+      <Button type="submit" isLoading={pending}>
+        Issue violation
+      </Button>
     </form>
   );
 }

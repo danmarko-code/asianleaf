@@ -42,11 +42,10 @@ export default async function HomeownerProfilePage({
       <div className="space-y-5">
         <PageHeader
           title="Profile"
-          description="Your login is not linked to a member record yet."
+          description="Your household details in one place."
         />
-        <Alert tone="warning" title="Member record missing">
-          Contact the association office so your login can be linked to your
-          household.
+        <Alert tone="warning" title="Your account isn’t linked yet">
+          Please contact the HOA office so we can connect your account to your home.
         </Alert>
       </div>
     );
@@ -68,11 +67,10 @@ export default async function HomeownerProfilePage({
       <div className="space-y-5">
         <PageHeader
           title="Profile"
-          description="Member record not found."
+          description="Your household details in one place."
         />
-        <Alert tone="warning" title="Member record missing">
-          Contact the association office so your login can be linked to your
-          household.
+        <Alert tone="warning" title="Your account isn’t linked yet">
+          Please contact the HOA office so we can connect your account to your home.
         </Alert>
       </div>
     );
@@ -84,6 +82,7 @@ export default async function HomeownerProfilePage({
     <div className="space-y-5">
       <PageHeader
         title="Profile"
+        description="Your household details in one place."
       />
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
@@ -93,7 +92,7 @@ export default async function HomeownerProfilePage({
         <CardHeader>
           <CardTitle>Unit</CardTitle>
           <CardDescription>
-            Unit details are maintained by the association office.
+            Need to change your address? Contact the HOA office.
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-1 text-sm">
@@ -113,8 +112,7 @@ export default async function HomeownerProfilePage({
         <CardHeader>
           <CardTitle>Contact details</CardTitle>
           <CardDescription>
-            Keep your contact number up to date so the association can reach
-            you.
+            Keep your number up to date so we can reach you.
           </CardDescription>
         </CardHeader>
         <CardBody>
@@ -141,7 +139,7 @@ export default async function HomeownerProfilePage({
           <CardTitle>Household members</CardTitle>
           <CardDescription>
             {member.occupants.length === 0
-              ? "No additional members listed."
+              ? "No household members added yet."
               : `${member.occupants.length} listed.`}
           </CardDescription>
         </CardHeader>
@@ -204,7 +202,7 @@ export default async function HomeownerProfilePage({
           <CardTitle>Kasambahay</CardTitle>
           <CardDescription>
             {member.kasambahay.length === 0
-              ? "No kasambahay listed."
+              ? "No kasambahay added yet."
               : `${member.kasambahay.length} listed.`}
           </CardDescription>
         </CardHeader>
@@ -266,7 +264,7 @@ export default async function HomeownerProfilePage({
         <CardHeader>
           <CardTitle>Pets</CardTitle>
           <CardDescription>
-            {member.pets.length === 0 ? "No pets listed." : `${member.pets.length} listed.`}
+            {member.pets.length === 0 ? "No pets added yet." : `${member.pets.length} listed.`}
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
@@ -317,7 +315,7 @@ export default async function HomeownerProfilePage({
           <CardTitle>Vehicles</CardTitle>
           <CardDescription>
             {member.vehicles.length === 0
-              ? "No vehicles listed."
+              ? "No vehicles added yet."
               : `${member.vehicles.length} listed.`}
           </CardDescription>
         </CardHeader>

@@ -13,9 +13,8 @@ export default async function AddMemberPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Records"
         title="Add member"
-        description="Create a household record and its portal login in one step."
+        description="Create a household and its login in one step."
         actions={
           <Link
             href="/admin/members"

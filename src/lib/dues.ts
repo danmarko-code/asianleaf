@@ -11,6 +11,27 @@ export function isValidMonthKey(value: string) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 }
 
+// Billing months are "YYYY-MM", so a plain string comparison is chronological.
+// The current month is allowed; only strictly earlier months are past.
+export function isPastMonthKey(value: string) {
+  return value < currentMonthKey();
+}
+
+export function shiftMonthKey(value: string, delta: number) {
+  const [year, month] = value.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1 + delta, 1));
+  return monthKeyFromDate(shifted);
+}
+
+export function formatMonthKey(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
 // Billing periods are stored as UTC midnight on the first of the month.
 export function periodFromMonthKey(value: string) {
   const [year, month] = value.split("-").map(Number);

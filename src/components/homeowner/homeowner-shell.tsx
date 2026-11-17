@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { LeafMark } from "@/components/brand/leaf-mark";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { logoutAction } from "@/app/(auth)/actions";
 import {
@@ -11,14 +11,14 @@ import {
   HomeIcon,
   LogOutIcon,
   MessageIcon,
-  ReceiptIcon,
   UserIcon,
+  WalletIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/app/dashboard", label: "Home", icon: HomeIcon },
-  { href: "/app/payments", label: "Dues", icon: ReceiptIcon },
+  { href: "/app/payments", label: "Payment", icon: WalletIcon },
   { href: "/app/violations", label: "Violations", icon: AlertIcon },
   { href: "/app/feedback", label: "Feedback", icon: MessageIcon },
   { href: "/app/profile", label: "Profile", icon: UserIcon },
@@ -38,15 +38,10 @@ export function HomeownerShell({
       <header className="sticky top-0 z-30 border-b border-line bg-cream">
         <div className="mx-auto flex h-16 w-full max-w-mobile items-center justify-between px-4 lg:max-w-5xl">
           <Link href="/app/dashboard" className="flex items-center gap-2">
-            <LeafMark className="h-7 w-7 text-forest" />
-            <div>
-              <p className="font-serif text-base leading-tight text-forest">
-                Asian Leaf
-              </p>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted">
-                Homeowner
-              </p>
-            </div>
+            <BrandMark className="h-7 w-7" />
+            <span className="font-serif text-lg font-semibold tracking-tight text-ink">
+              Asian Leaf
+            </span>
           </Link>
 
           <div className="flex items-center gap-2">
@@ -71,12 +66,16 @@ export function HomeownerShell({
               })}
             </nav>
 
-            <div className="hidden border-l border-line pl-3 text-right lg:block">
-              <p className="text-sm font-medium text-ink">{user.name}</p>
-              <p className="text-[11px] text-muted">{user.unit ?? user.username}</p>
-            </div>
-
             <ThemeToggle />
+
+            <Link
+              href="/app/profile"
+              aria-label="Profile"
+              title={user.unit ?? user.username}
+              className="hidden h-9 w-9 items-center justify-center rounded-full bg-forest-soft text-sm font-semibold uppercase text-forest lg:flex"
+            >
+              {user.name.slice(0, 1)}
+            </Link>
 
             <form action={logoutAction}>
               <button
@@ -91,12 +90,15 @@ export function HomeownerShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-mobile px-4 py-6 pb-28 lg:max-w-3xl lg:pb-12">
+      <main
+        key={pathname}
+        className="mx-auto w-full max-w-mobile px-4 py-6 pb-24 lg:max-w-3xl lg:pb-12"
+      >
         {children}
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden">
-        <div className="mx-auto grid max-w-mobile grid-cols-5">
+        <div className="mx-auto grid max-w-mobile grid-cols-5 p-1.5">
           {navItems.map((item) => {
             const active = pathname.startsWith(item.href);
             const Icon = item.icon;
@@ -107,16 +109,12 @@ export function HomeownerShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-col items-center gap-1 py-2.5 text-[11px]",
-                  active ? "font-medium text-forest" : "text-muted",
+                  "flex flex-col items-center gap-1 rounded-md py-2 text-[11px] transition-colors",
+                  active
+                    ? "bg-forest-soft font-medium text-forest"
+                    : "text-muted hover:text-ink",
                 )}
               >
-                <span
-                  className={cn(
-                    "absolute top-0 h-0.5 w-6 rounded-sm",
-                    active ? "bg-lime" : "bg-transparent",
-                  )}
-                />
                 <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
               </Link>

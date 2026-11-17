@@ -7,12 +7,19 @@ import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { dateFromInput } from "@/lib/dates";
 import { prisma } from "@/lib/db";
+import {
+  MAX_CATEGORY_DETAIL,
+  OTHER_CATEGORY,
+  VIOLATION_CATEGORIES,
+} from "@/lib/violations";
+import type { ViolationFormState } from "./form-state";
 
 const violationSchema = z.object({
   householdId: z.string().min(1),
   memberId: z.string().optional(),
   kind: z.enum(["WARNING", "PAYMENT_REQUIRED"]),
-  category: z.string().trim().min(2).max(100),
+  category: z.enum(VIOLATION_CATEGORIES),
+  categoryDetail: z.string().trim().max(MAX_CATEGORY_DETAIL).optional(),
   description: z.string().trim().min(5).max(1000),
   issuedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -29,7 +36,10 @@ function refreshViolationViews() {
   revalidatePath("/app/dashboard");
 }
 
-export async function createViolationAction(formData: FormData) {
+export async function createViolationAction(
+  _previous: ViolationFormState,
+  formData: FormData,
+): Promise<ViolationFormState> {
   const user = await requireRole("ADMIN");
 
   const parsed = violationSchema.safeParse({
@@ -37,6 +47,7 @@ export async function createViolationAction(formData: FormData) {
     memberId: formData.get("memberId") || undefined,
     kind: formData.get("kind"),
     category: formData.get("category"),
+    categoryDetail: formData.get("categoryDetail") || undefined,
     description: formData.get("description"),
     issuedAt: formData.get("issuedAt"),
     dueDate: formData.get("dueDate") || undefined,
@@ -44,7 +55,16 @@ export async function createViolationAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    fail("Complete the household, category, description and date.");
+    const badCategory = parsed.error.issues.some(
+      (issue) => issue.path[0] === "category",
+    );
+    if (badCategory) {
+      return {
+        error: "Choose a violation category from the list.",
+        fieldErrors: { category: "Choose a violation category." },
+      };
+    }
+    return { error: "Complete the household, description and date." };
   }
 
   const household = await prisma.household.findUnique({
@@ -52,32 +72,39 @@ export async function createViolationAction(formData: FormData) {
     include: { members: true },
   });
 
-  if (!household) fail("Household not found.");
+  if (!household) return { error: "Household not found." };
 
   const member = parsed.data.memberId
     ? household.members.find((row) => row.id === parsed.data.memberId)
     : null;
 
   if (parsed.data.memberId && !member) {
-    fail("Choose a resident from the selected household.");
+    return { error: "Choose a resident from the selected household." };
   }
 
   if (parsed.data.kind === "PAYMENT_REQUIRED") {
     const fine = Number(parsed.data.fineAmount);
     if (!Number.isFinite(fine) || fine <= 0) {
-      fail("Enter the amount the resident needs to pay.");
+      return { error: "Enter the amount the resident needs to pay." };
     }
     if (!parsed.data.dueDate) {
-      fail("Choose the payment due date.");
+      return { error: "Choose the payment due date." };
     }
   }
+
+  // "Other" keeps its note in the same column, so every screen that prints the
+  // category keeps working without a second field.
+  const category =
+    parsed.data.category === OTHER_CATEGORY && parsed.data.categoryDetail
+      ? `${OTHER_CATEGORY}: ${parsed.data.categoryDetail}`
+      : parsed.data.category;
 
   const violation = await prisma.violation.create({
     data: {
       householdId: household.id,
       memberId: member?.id ?? null,
       kind: parsed.data.kind,
-      category: parsed.data.category,
+      category,
       description: parsed.data.description,
       status: "OPEN",
       fineAmount:

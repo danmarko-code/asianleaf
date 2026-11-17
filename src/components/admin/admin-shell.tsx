@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { LeafMark } from "@/components/brand/leaf-mark";
+import { BrandMark } from "@/components/brand/brand-mark";
 import {
   AlertIcon,
   BellIcon,
@@ -17,21 +17,21 @@ import {
   UsersIcon,
   WalletIcon,
   HomeIcon,
+  InboxIcon,
 } from "@/components/icons";
 import { logoutAction } from "@/app/(auth)/actions";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: HomeIcon },
   { href: "/admin/members", label: "Members", icon: UsersIcon },
-  { href: "/admin/dues", label: "Dues", icon: ReceiptIcon },
   { href: "/admin/payments", label: "Payments", icon: WalletIcon },
-  { href: "/admin/budget", label: "Budget", icon: ChartIcon },
+  { href: "/admin/dues", label: "Dues", icon: ReceiptIcon },
   { href: "/admin/violations", label: "Violations", icon: AlertIcon },
+  { href: "/admin/budget", label: "Budget", icon: ChartIcon },
+  { href: "/admin/reports", label: "Reports", icon: InboxIcon },
   { href: "/admin/feedback", label: "Feedback", icon: MessageIcon },
-  { href: "/admin/reports", label: "Reports", icon: ChartIcon },
   { href: "/admin/audit", label: "Audit log", icon: BellIcon },
 ];
 
@@ -52,24 +52,19 @@ function SidebarContent({
     <>
       <div
         className={cn(
-          "flex h-16 items-center gap-2 border-b border-line px-4",
+          "flex h-16 items-center gap-2.5 px-5",
           collapsed && "justify-center px-0",
         )}
       >
-        <LeafMark className="h-8 w-8 shrink-0 text-forest" />
+        <BrandMark className="h-8 w-8 shrink-0" />
         {!collapsed ? (
-          <div>
-            <p className="font-serif text-lg leading-tight text-forest">
-              Asian Leaf
-            </p>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted">
-              Administration
-            </p>
-          </div>
+          <p className="font-serif text-xl font-semibold tracking-tight text-ink">
+            Asian Leaf
+          </p>
         ) : null}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
         {navItems.map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -82,10 +77,10 @@ function SidebarContent({
               title={collapsed ? item.label : undefined}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm transition-colors",
+                "relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
                 active
-                  ? "border-lime bg-cream font-medium text-forest"
-                  : "border-transparent text-muted hover:bg-cream hover:text-ink",
+                  ? "bg-forest-soft font-medium text-forest"
+                  : "text-muted hover:bg-cream hover:text-ink",
                 collapsed && "justify-center px-0",
               )}
             >
@@ -96,7 +91,7 @@ function SidebarContent({
         })}
       </nav>
 
-      <div className="space-y-1 border-t border-line p-2">
+      <div className="space-y-0.5 border-t border-line p-3">
         <div
           className={cn(
             "flex items-center gap-3 rounded-md px-3 py-2",
@@ -250,7 +245,7 @@ export function AdminShell({
           collapsed ? "lg:pl-[76px]" : "lg:pl-64",
         )}
       >
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-surface px-4 lg:px-8">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-cream px-4 lg:px-8">
           <button
             type="button"
             aria-label="Open menu"
@@ -261,24 +256,21 @@ export function AdminShell({
           </button>
 
           <div className="flex min-w-0 items-center gap-2">
-            <LeafMark className="h-6 w-6 text-forest lg:hidden" />
-            <p className="truncate text-sm font-medium text-ink">{current}</p>
+            <BrandMark className="h-6 w-6 lg:hidden" />
+            <p className="truncate text-base font-semibold text-ink">{current}</p>
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            <span className="hidden text-xs text-muted sm:block">{user.username}</span>
-            <Badge tone="success">Confirmed</Badge>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-content flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <main
+          key={pathname}
+          className="mx-auto w-full max-w-content flex-1 px-4 py-6 lg:px-8 lg:py-8"
+        >
           {children}
         </main>
-
-        <footer className="border-t border-line px-4 py-4 text-xs text-muted lg:px-8">
-          Asian Leaf Homeowners Association · General Trias, Cavite
-        </footer>
       </div>
     </div>
   );

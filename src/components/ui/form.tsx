@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const controlBase =
-  "w-full rounded-md border bg-surface px-3 text-sm text-ink placeholder:text-muted disabled:cursor-not-allowed disabled:bg-cream";
+  "w-full rounded-md border bg-surface px-3.5 text-sm text-ink transition-colors placeholder:text-muted hover:border-leaf focus:border-leaf focus:outline-none focus:ring-4 focus:ring-forest-soft disabled:cursor-not-allowed disabled:bg-cream";
 
 // The error state swaps the border colour instead of adding a second border
 // class, so the red outline always wins (cn does not merge Tailwind classes).

@@ -42,15 +42,13 @@ export default async function HomeownerFeedbackPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Community"
         title="Feedback"
-        description="Report an issue or suggest an improvement to the association."
+        description="Share your ideas, concerns or requests with the HOA."
       />
 
       {submitted ? (
-        <Alert tone="success" title="Feedback submitted">
-          The association will review your message. Replies appear here and in
-          your notifications.
+        <Alert tone="success" title="Thanks for your feedback!">
+          We’ll review it and reply here soon.
         </Alert>
       ) : null}
       {error ? <Alert tone="danger">{error}</Alert> : null}
@@ -59,7 +57,7 @@ export default async function HomeownerFeedbackPage({
         <CardHeader>
           <CardTitle>Send a message</CardTitle>
           <CardDescription>
-            Keep it short and specific so the office can act on it.
+            Tell us what’s on your mind.
           </CardDescription>
         </CardHeader>
         <CardBody>
@@ -76,7 +74,7 @@ export default async function HomeownerFeedbackPage({
               required
               minLength={5}
               maxLength={2000}
-              placeholder="Describe the concern or suggestion."
+              placeholder="What would you like us to know?"
             />
             <Button type="submit" size="sm">
               Submit feedback
@@ -90,15 +88,15 @@ export default async function HomeownerFeedbackPage({
           <CardTitle>Your feedback</CardTitle>
           <CardDescription>
             {feedback.length === 0
-              ? "You have not submitted feedback yet."
+              ? "You haven’t sent anything yet."
               : `${feedback.length} message${feedback.length === 1 ? "" : "s"}.`}
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
           {feedback.length === 0 ? (
             <EmptyState
-              title="No feedback yet"
-              description="Use the form above to send your first message."
+              title="No messages yet"
+              description="Your messages and our replies will appear here."
               className="border-0 bg-transparent px-0 py-6 shadow-none"
             />
           ) : (

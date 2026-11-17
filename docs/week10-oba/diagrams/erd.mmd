@@ -1,0 +1,185 @@
+erDiagram
+    USER ||--o{ SESSION : "authenticates"
+    USER |o--o| HOUSEHOLD : "logs in for"
+    USER |o--o| MEMBER : "represents"
+    USER ||--o{ NOTIFICATION : "receives"
+    USER ||--o{ FEEDBACK : "submits"
+    USER ||--o{ AUDITLOG : "acts in"
+    USER ||--o{ BUDGETENTRY : "records"
+    USER |o--o{ PAYMENT : "reviews"
+    USER |o--o{ VIOLATION : "issues"
+
+    HOUSEHOLD ||--o{ MEMBER : "houses"
+    HOUSEHOLD ||--o{ DUE : "is billed"
+    HOUSEHOLD ||--o{ VIOLATION : "is issued"
+
+    MEMBER ||--o{ KASAMBAHAY : "employs"
+    MEMBER ||--o{ PET : "keeps"
+    MEMBER ||--o{ VEHICLE : "registers"
+    MEMBER ||--o{ HOUSEHOLDMEMBER : "declares"
+    MEMBER |o--o{ VIOLATION : "is cited in"
+
+    DUE ||--o{ PAYMENT : "is settled by"
+    DUE ||--o{ REMINDERLOG : "triggers"
+    PAYMENTCHANNEL |o--o{ PAYMENT : "channels"
+
+    USER {
+        string id PK
+        string username UK
+        string passwordHash
+        string role
+        string status
+        string householdId FK
+        string memberId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+    SESSION {
+        string id PK
+        string tokenHash UK
+        string userId FK
+        datetime expiresAt
+        string ip
+        string userAgent
+        datetime lastUsedAt
+    }
+    HOUSEHOLD {
+        string id PK
+        string unitAddress UK
+        string street
+        string block
+        string lot
+        datetime createdAt
+        datetime updatedAt
+    }
+    MEMBER {
+        string id PK
+        string householdId FK
+        string firstName
+        string lastName
+        string contactNumber
+        string occupancyType
+        string status
+        string consentVersion
+        datetime consentAt
+    }
+    KASAMBAHAY {
+        string id PK
+        string memberId FK
+        string fullName
+        string contactNumber
+    }
+    PET {
+        string id PK
+        string memberId FK
+        string name
+        string breed
+        int count
+    }
+    VEHICLE {
+        string id PK
+        string memberId FK
+        string vehicleType
+        string plateNumber
+        string brandModel
+        string color
+        int count
+    }
+    HOUSEHOLDMEMBER {
+        string id PK
+        string memberId FK
+        string fullName
+        string relationship
+    }
+    DUE {
+        string id PK
+        string householdId FK
+        date periodStart
+        decimal amount
+        date dueDate
+        string status
+    }
+    PAYMENTCHANNEL {
+        string id PK
+        string name
+        string type
+        string accountName
+        string accountNumber
+        string qrImageUrl
+        string instructions
+        boolean isActive
+        int sortOrder
+    }
+    PAYMENT {
+        string id PK
+        string dueId FK
+        string channelId FK
+        decimal amount
+        string method
+        string status
+        string referenceNumber UK
+        string receiptNumber UK
+        string notes
+        datetime paidAt
+        string rejectionReason
+        string reviewedById FK
+        datetime reviewedAt
+    }
+    REMINDERLOG {
+        string id PK
+        string dueId FK
+        string kind
+        string dedupeKey
+        datetime sentAt
+    }
+    BUDGETENTRY {
+        string id PK
+        string type
+        string category
+        string description
+        decimal amount
+        date occurredAt
+        string createdById FK
+    }
+    NOTIFICATION {
+        string id PK
+        string userId FK
+        string type
+        string title
+        string body
+        string link
+        datetime readAt
+    }
+    FEEDBACK {
+        string id PK
+        string userId FK
+        string subject
+        string message
+        string status
+        string adminNote
+    }
+    VIOLATION {
+        string id PK
+        string householdId FK
+        string memberId FK
+        string kind
+        string category
+        string description
+        string status
+        decimal fineAmount
+        datetime issuedAt
+        date dueDate
+        datetime resolvedAt
+        string resolutionNote
+        string issuedById FK
+    }
+    AUDITLOG {
+        string id PK
+        string actorUserId FK
+        string action
+        string entityType
+        string entityId
+        json metadata
+        string ip
+        datetime createdAt
+    }

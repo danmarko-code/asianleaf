@@ -8,20 +8,22 @@ export function EmptyState({
   className,
 }: {
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
   className?: string;
 }) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-dashed border-line bg-surface px-6 py-10 text-center",
+        "rounded-lg border border-dashed border-line px-6 py-10 text-center",
         className,
       )}
     >
-      <h3 className="font-serif text-xl text-ink">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted">{description}</p>
-      {action ? <div className="mt-5">{action}</div> : null}
+      <p className="font-serif text-lg font-semibold tracking-tight text-ink">{title}</p>
+      {description ? (
+        <p className="mx-auto mt-1 max-w-sm text-sm text-muted">{description}</p>
+      ) : null}
+      {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
 }

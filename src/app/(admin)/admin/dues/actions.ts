@@ -8,7 +8,9 @@ import { logAudit } from "@/lib/audit";
 import { MONTHLY_DUES } from "@/lib/constants";
 import { prisma } from "@/lib/db";
 import {
+  currentMonthKey,
   dueDateForPeriod,
+  isPastMonthKey,
   isValidMonthKey,
   monthKeyFromDate,
   periodFromMonthKey,
@@ -39,7 +41,19 @@ export async function generateDuesAction(formData: FormData) {
   const admin = await requireRole("ADMIN");
   const month = monthSchema.safeParse(formData.get("month"));
 
-  if (!month.success) back(monthKeyFromDate(new Date()), "Choose a valid month.", "error");
+  if (!month.success) {
+    back(currentMonthKey(), "Choose a valid month.", "error");
+  }
+
+  // Same rule as the picker's min attribute, enforced server-side so a manual
+  // submit cannot create a billing run for a period that has already passed.
+  if (isPastMonthKey(month.data)) {
+    back(
+      month.data,
+      "Cannot generate monthly dues for an out-of-date billing period.",
+      "error",
+    );
+  }
 
   const periodStart = periodFromMonthKey(month.data);
   const dueDate = dueDateForPeriod(periodStart);

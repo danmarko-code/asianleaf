@@ -41,6 +41,7 @@ enum PaymentMethod {
   BANK_TRANSFER
   EWALLET
   CASH
+  OTHER
 }
 
 enum PaymentStatus {
@@ -146,6 +147,7 @@ model Household {
   lot         String?
   members     Member[]
   dues        Due[]
+  payments    Payment[]
   account     User?
   violations  Violation[]
   createdAt   DateTime    @default(now())
@@ -269,20 +271,24 @@ model PaymentChannel {
   @@index([isActive, sortOrder])
 }
 
-// A payment is created as PENDING after the homeowner scans the HOA QR and
-// submits the reference number. The treasurer verifies the transfer and either
-// marks it PAID or rejects it with a reason.
+// A payment is submitted by a homeowner and verified by the treasurer.
+// householdId is the direct link to the resident; dueId is set when an open
+// billing period exists, so a payment can still be recorded without one.
+// The receipt is a file under public/uploads/receipts.
 model Payment {
   id              String          @id @default(cuid())
-  dueId           String
-  due             Due             @relation(fields: [dueId], references: [id], onDelete: Restrict)
+  householdId     String
+  household       Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  dueId           String?
+  due             Due?            @relation(fields: [dueId], references: [id], onDelete: SetNull)
   channelId       String?
   channel         PaymentChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   amount          Decimal         @db.Decimal(10, 2)
   method          PaymentMethod
   status          PaymentStatus   @default(PENDING)
-  referenceNumber String          @unique
+  referenceNumber String?         @unique
   receiptNumber   String?         @unique
+  receiptUrl      String?
   notes           String?
   paidAt          DateTime?
   rejectionReason String?
@@ -292,6 +298,7 @@ model Payment {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
+  @@index([householdId])
   @@index([dueId])
   @@index([status])
   @@index([channelId])
