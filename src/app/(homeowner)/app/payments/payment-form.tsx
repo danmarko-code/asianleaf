@@ -163,22 +163,24 @@ export function PaymentForm() {
                 Remove
               </button>
             </div>
-          ) : (
-            <input
-              ref={fileRef}
-              id="receipt"
-              name="receipt"
-              type="file"
-              accept={RECEIPT_ACCEPT}
-              onChange={handleFile}
-              aria-invalid={receiptError ? true : undefined}
-              aria-describedby={receiptError ? "receipt-error" : "receipt-hint"}
-              className={cn(
-                "block w-full cursor-pointer rounded-md border bg-surface px-3 py-2.5 text-sm text-muted transition-colors file:mr-3 file:rounded-md file:border-0 file:bg-forest-soft file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-forest hover:border-leaf",
-                receiptError ? "border-red" : "border-line",
-              )}
-            />
-          )}
+          ) : null}
+          {/* Keep the input mounted while the preview is shown: an unmounted
+              file input drops the selected File from the submitted FormData. */}
+          <input
+            ref={fileRef}
+            id="receipt"
+            name="receipt"
+            type="file"
+            accept={RECEIPT_ACCEPT}
+            onChange={handleFile}
+            style={preview ? { display: "none" } : undefined}
+            aria-invalid={receiptError ? true : undefined}
+            aria-describedby={receiptError ? "receipt-error" : "receipt-hint"}
+            className={cn(
+              "block w-full cursor-pointer rounded-md border bg-surface px-3 py-2.5 text-sm text-muted transition-colors file:mr-3 file:rounded-md file:border-0 file:bg-forest-soft file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-forest hover:border-leaf",
+              receiptError ? "border-red" : "border-line",
+            )}
+          />
         </div>
 
         {receiptError ? (
