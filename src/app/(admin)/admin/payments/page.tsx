@@ -133,14 +133,18 @@ export default async function AdminPaymentsPage({
                           </p>
                           {payment.receiptUrl ? (
                             <a
-                              href={payment.receiptUrl}
+                              href={`/api/payments/${payment.id}/receipt`}
                               target="_blank"
                               rel="noreferrer"
                               className="mt-1 block text-xs text-forest underline-offset-2 hover:underline"
                             >
-                              View receipt
+                              View Receipt
                             </a>
-                          ) : null}
+                          ) : (
+                            <p className="mt-1 text-xs text-muted">
+                              No receipt attached
+                            </p>
+                          )}
                           {payment.notes ? (
                             <p className="mt-1 max-w-56 text-xs text-muted">
                               {payment.notes}
@@ -253,14 +257,18 @@ export default async function AdminPaymentsPage({
                         ) : null}
                         {payment.receiptUrl ? (
                           <a
-                            href={payment.receiptUrl}
+                            href={`/api/payments/${payment.id}/receipt`}
                             target="_blank"
                             rel="noreferrer"
                             className="mt-1 block text-xs text-forest underline-offset-2 hover:underline"
                           >
-                            View receipt
+                            View Receipt
                           </a>
-                        ) : null}
+                        ) : (
+                          <p className="mt-1 text-xs text-muted">
+                            No receipt attached
+                          </p>
+                        )}
                       </Td>
                       <Td className="tabular">
                         {formatPeso(Number(payment.amount))}

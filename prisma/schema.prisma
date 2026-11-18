@@ -274,7 +274,7 @@ model PaymentChannel {
 // A payment is submitted by a homeowner and verified by the treasurer.
 // householdId is the direct link to the resident; dueId is set when an open
 // billing period exists, so a payment can still be recorded without one.
-// The receipt is a file under public/uploads/receipts.
+// The receipt is a private file under .data/receipts, served by an authorized route.
 model Payment {
   id              String          @id @default(cuid())
   householdId     String

@@ -183,7 +183,7 @@ export default async function HomeownerPaymentsPage({
                           </span>
                           {payment.receiptUrl ? (
                             <a
-                              href={payment.receiptUrl}
+                              href={`/api/payments/${payment.id}/receipt`}
                               target="_blank"
                               rel="noreferrer"
                               className="mt-0.5 block text-xs text-forest underline-offset-2 hover:underline"
