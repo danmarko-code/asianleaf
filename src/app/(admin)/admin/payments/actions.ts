@@ -31,11 +31,8 @@ export async function approvePaymentAction(formData: FormData) {
   const payment = await prisma.payment.findUnique({
     where: { id: parsed.data },
     include: {
-      due: {
-        include: {
-          household: { include: { account: { select: { id: true } } } },
-        },
-      },
+      due: true,
+      household: { include: { account: { select: { id: true } } } },
     },
   });
 
@@ -61,23 +58,26 @@ export async function approvePaymentAction(formData: FormData) {
       },
     });
 
-    const paid = await tx.payment.aggregate({
-      where: { dueId: payment.dueId, status: "PAID" },
-      _sum: { amount: true },
-    });
+    // A payment is not tied to an invoice when the household had none open.
+    if (payment.due) {
+      const paid = await tx.payment.aggregate({
+        where: { dueId: payment.due.id, status: "PAID" },
+        _sum: { amount: true },
+      });
 
-    const total = Number(paid._sum.amount ?? 0);
-    await tx.due.update({
-      where: { id: payment.dueId },
-      data: {
-        status: total >= Number(payment.due.amount) ? "PAID" : "UNPAID",
-      },
-    });
+      const total = Number(paid._sum.amount ?? 0);
+      await tx.due.update({
+        where: { id: payment.due.id },
+        data: {
+          status: total >= Number(payment.due.amount) ? "PAID" : "UNPAID",
+        },
+      });
+    }
 
-    if (payment.due.household.account) {
+    if (payment.household.account) {
       await tx.notification.create({
         data: {
-          userId: payment.due.household.account.id,
+          userId: payment.household.account.id,
           type: "PAYMENT_RECEIVED",
           title: "Payment approved",
           body: `We verified ${formatPeso(Number(payment.amount))}. Receipt ${receiptNumber}.`,
@@ -115,11 +115,7 @@ export async function rejectPaymentAction(formData: FormData) {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId.data },
     include: {
-      due: {
-        include: {
-          household: { include: { account: { select: { id: true } } } },
-        },
-      },
+      household: { include: { account: { select: { id: true } } } },
     },
   });
 
@@ -138,10 +134,10 @@ export async function rejectPaymentAction(formData: FormData) {
     },
   });
 
-  if (payment.due.household.account) {
+  if (payment.household.account) {
     await prisma.notification.create({
       data: {
-        userId: payment.due.household.account.id,
+        userId: payment.household.account.id,
         type: "GENERAL",
         title: "Payment not verified",
         body: reason.data,

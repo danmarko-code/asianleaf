@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  CollectionRateMeter,
   CollectionsTrendChart,
   ProportionBar,
 } from "@/components/admin/dashboard-charts";
@@ -9,6 +8,7 @@ import {
   AlertIcon,
   ArrowRightIcon,
   ChartIcon,
+  CheckIcon,
   HomeIcon,
   InboxIcon,
   MessageIcon,
@@ -16,7 +16,6 @@ import {
   UsersIcon,
   WalletIcon,
 } from "@/components/icons";
-import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -25,10 +24,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
+import { Hero } from "@/components/ui/hero";
 import { requireRole } from "@/lib/auth";
 import { manilaNow } from "@/lib/dates";
 import { prisma } from "@/lib/db";
+import { formatPeso } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -162,7 +162,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/members",
       label: "Members",
       value: String(members),
-      hint: `${households} households · ${inactiveMembers} inactive`,
+      hint: `in ${households} homes · ${inactiveMembers} inactive`,
       icon: UsersIcon,
       tone: "forest",
     },
@@ -170,7 +170,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/dues",
       label: "Dues",
       value: String(unpaidDues),
-      hint: `${unpaidDues} unpaid account${unpaidDues === 1 ? "" : "s"}`,
+      hint: "Unpaid",
       icon: ReceiptIcon,
       tone: unpaidDues > 0 ? "warning" : "forest",
     },
@@ -178,10 +178,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/payments",
       label: "Payments",
       value: String(pendingPayments),
-      hint:
-        pendingPayments > 0
-          ? `${pendingPayments} pending verification`
-          : "All verified",
+      hint: pendingPayments > 0 ? "To verify" : "All clear",
       icon: WalletIcon,
       tone: pendingPayments > 0 ? "warning" : "forest",
     },
@@ -189,7 +186,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/budget",
       label: "Budget",
       value: String(budgetEntries),
-      hint: "Income & expense tracker",
+      hint: "Entries",
       icon: ChartIcon,
       tone: "forest",
     },
@@ -197,10 +194,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/violations",
       label: "Violations",
       value: String(openViolations),
-      hint:
-        openViolations > 0
-          ? `${openViolations} open notices`
-          : "Zero open notices",
+      hint: "Open",
       icon: AlertIcon,
       tone: openViolations > 0 ? "danger" : "forest",
     },
@@ -208,15 +202,15 @@ export default async function AdminDashboardPage() {
       href: "/admin/feedback",
       label: "Feedback",
       value: String(newFeedback),
-      hint: newFeedback > 0 ? `${newFeedback} new message(s)` : "Up to date",
+      hint: "New",
       icon: MessageIcon,
       tone: newFeedback > 0 ? "warning" : "forest",
     },
     {
       href: "/admin/reports",
       label: "Reports",
-      value: "Export",
-      hint: "Unpaid dues, audits & CSV",
+      value: "CSV",
+      hint: "& print",
       icon: InboxIcon,
       tone: "forest",
     },
@@ -224,218 +218,115 @@ export default async function AdminDashboardPage() {
       href: "/admin/audit",
       label: "Audit log",
       value: String(auditEntries),
-      hint: "Privileged actions logged",
+      hint: "Entries",
       icon: HomeIcon,
       tone: "forest",
     },
   ];
 
+  const rate =
+    totalBilledThisMonth > 0
+      ? Math.round((totalCollectedThisMonth / totalBilledThisMonth) * 100)
+      : 0;
+
+  const todos = [
+    pendingPayments > 0 && {
+      href: "/admin/payments",
+      label: `${pendingPayments} payment${pendingPayments === 1 ? "" : "s"} to verify`,
+      tone: "warning" as const,
+      icon: WalletIcon,
+    },
+    openViolations > 0 && {
+      href: "/admin/violations",
+      label: `${openViolations} open violation${openViolations === 1 ? "" : "s"}`,
+      tone: "danger" as const,
+      icon: AlertIcon,
+    },
+    newFeedback > 0 && {
+      href: "/admin/feedback",
+      label: `${newFeedback} new feedback`,
+      tone: "warning" as const,
+      icon: MessageIcon,
+    },
+  ].filter(Boolean) as {
+    href: string;
+    label: string;
+    tone: "warning" | "danger";
+    icon: typeof WalletIcon;
+  }[];
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Administration"
-        title="Dashboard"
-        description="Visual overview of collections, community compliance and operations."
-      />
-
-      {/* Action alerts if items need attention */}
-      {pendingPayments > 0 || openViolations > 0 ? (
-        <div className="flex flex-col gap-2 sm:flex-row">
-          {pendingPayments > 0 && (
-            <Alert tone="warning" title="Payments awaiting verification" className="flex-1">
-              There {pendingPayments === 1 ? "is" : "are"} {pendingPayments}{" "}
-              pending GCash payment{pendingPayments === 1 ? "" : "s"} waiting for
-              treasurer approval.{" "}
-              <Link
-                href="/admin/payments"
-                className="font-medium underline underline-offset-2"
-              >
-                Review now
-              </Link>
-            </Alert>
-          )}
-          {openViolations > 0 && (
-            <Alert tone="danger" title="Open violation notices" className="flex-1">
-              {openViolations} violation notice{openViolations === 1 ? "" : "s"}{" "}
-              active in the community.{" "}
-              <Link
-                href="/admin/violations"
-                className="font-medium underline underline-offset-2"
-              >
-                View notices
-              </Link>
-            </Alert>
-          )}
-        </div>
-      ) : null}
-
-      {/* Primary Visual Row: 6-Month Trend & Monthly Collection Gauge */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* 6-Month Trend Chart */}
-        <Card className="lg:col-span-7">
-          <CardHeader>
-            <CardTitle>Collections Trend</CardTitle>
-            <CardDescription>
-              Verified GCash payments received over the last 6 months.
-            </CardDescription>
-          </CardHeader>
-          <CardBody>
-            <CollectionsTrendChart data={trendData} />
-          </CardBody>
-        </Card>
-
-        {/* Current Month Rate Meter */}
-        <Card className="lg:col-span-5">
-          <CardHeader>
-            <CardTitle>Current Month Collection</CardTitle>
-            <CardDescription>
-              Collection rate and breakdown for the active billing cycle.
-            </CardDescription>
-          </CardHeader>
-          <CardBody>
-            <CollectionRateMeter
-              billed={totalBilledThisMonth}
-              collected={totalCollectedThisMonth}
-              unpaidCount={unpaidDuesThisMonth}
-              paidCount={paidDuesCount}
-            />
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Secondary Visual Row: Community Breakdown & Operational Indicators */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Occupancy Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Occupancy & Residents</CardTitle>
-            <CardDescription>
-              Household residency status and community composition.
-            </CardDescription>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <ProportionBar
-              title="Residency breakdown"
-              segments={[
-                {
-                  label: "Owners",
-                  value: ownerMembers,
-                  color: "bg-forest",
-                },
-                {
-                  label: "Tenants",
-                  value: tenantMembers,
-                  color: "bg-leaf",
-                },
-              ]}
-            />
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-line">
-              <Badge tone="neutral">
-                {kasambahayCount} Kasambahay
-              </Badge>
-              <Badge tone="neutral">
-                {vehicleCount} Vehicles
-              </Badge>
-              <Badge tone="neutral">
-                {petCount} Pets
-              </Badge>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Violations & Compliance Meter */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Community Compliance</CardTitle>
-            <CardDescription>
-              Status of all issued community notices and violations.
-            </CardDescription>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <ProportionBar
-              title="Violation resolution"
-              segments={[
-                {
-                  label: "Resolved",
-                  value: resolvedViolations,
-                  color: "bg-forest",
-                },
-                {
-                  label: "Open notices",
-                  value: openViolations,
-                  color: "bg-amber",
-                  textColor: "text-amber",
-                },
-              ]}
-            />
-            <p className="text-xs text-muted pt-2 border-t border-line">
-              {openViolations === 0
-                ? "All community violations have been resolved."
-                : `${openViolations} notice${openViolations === 1 ? "" : "s"} require member settlement or review.`}
+      <Hero eyebrow="Collected this month">
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="tabular font-serif text-5xl font-semibold leading-none tracking-tight">
+              {formatPeso(totalCollectedThisMonth)}
             </p>
-          </CardBody>
-        </Card>
+            <p className="mt-2 text-sm opacity-80">
+              of {formatPeso(totalBilledThisMonth)} · {paidDuesCount} paid ·{" "}
+              {unpaidDuesThisMonth} unpaid
+            </p>
+          </div>
+          <p className="tabular text-sm font-semibold">
+            {rate}%
+          </p>
+        </div>
+        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/20">
+          <div
+            className="h-full rounded-full bg-lime"
+            style={{ width: `${Math.min(rate, 100)}%` }}
+          />
+        </div>
+      </Hero>
 
-        {/* Payment Verification Health */}
-        <Card className="sm:col-span-2 lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Payment Processing</CardTitle>
-            <CardDescription>
-              GCash payment submission flow and review status.
-            </CardDescription>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <ProportionBar
-              title="Payment review status"
-              segments={[
-                {
-                  label: "Approved",
-                  value: paidPaymentsCount,
-                  color: "bg-forest",
-                },
-                {
-                  label: "Pending",
-                  value: pendingPayments,
-                  color: "bg-amber",
-                  textColor: "text-amber",
-                },
-                {
-                  label: "Rejected",
-                  value: rejectedPaymentsCount,
-                  color: "bg-line",
-                },
-              ]}
-            />
-            <div className="flex items-center justify-between pt-2 border-t border-line text-xs">
-              <span className="text-muted">Homeowner accounts:</span>
-              <span className="font-semibold text-ink">
-                {homeowners} active logins
-              </span>
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Interactive Quick Navigation Grid */}
-      <div>
-        <h2 className="mb-3 font-serif text-lg font-semibold text-ink">
-          Operational Areas
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {sections.map((item) => {
-            const IconComponent = item.icon;
+      {todos.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {todos.map((todo) => {
+            const Icon = todo.icon;
             return (
               <Link
-                key={item.href}
-                href={item.href}
-                className="group relative flex flex-col justify-between rounded-lg border border-line bg-surface p-4 shadow-card transition-all hover:border-forest/40 hover:shadow-md"
+                key={todo.href}
+                href={todo.href}
+                className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
+                  todo.tone === "danger"
+                    ? "bg-red-soft text-red"
+                    : "bg-amber-soft text-ink"
+                }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-cream text-forest group-hover:bg-forest group-hover:text-cream transition-colors">
-                    <IconComponent className="h-5 w-5" />
-                  </div>
+                <Icon className="h-4 w-4" />
+                {todo.label}
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <CheckIcon className="h-4 w-4 text-leaf" />
+          All caught up
+        </p>
+      )}
+
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {sections.map((item) => {
+          const IconComponent = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="tile flex items-center gap-3 rounded-lg border border-line bg-surface p-4"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-forest-soft text-forest">
+                <IconComponent className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-ink">
+                  {item.label}
+                </p>
+                <p className="truncate text-xs text-muted">
                   <span
-                    className={`tabular text-base font-bold ${
+                    className={`tabular font-semibold ${
                       item.tone === "danger"
                         ? "text-red"
                         : item.tone === "warning"
@@ -444,22 +335,88 @@ export default async function AdminDashboardPage() {
                     }`}
                   >
                     {item.value}
-                  </span>
-                </div>
-                <div className="mt-4">
-                  <p className="text-sm font-semibold text-ink group-hover:text-forest transition-colors">
-                    {item.label}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted">{item.hint}</p>
-                </div>
-                <div className="mt-3 flex items-center justify-end text-xs font-medium text-forest opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span>Open</span>
-                  <ArrowRightIcon className="ml-1 h-3.5 w-3.5" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                  </span>{" "}
+                  {item.hint}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Collections</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <CollectionsTrendChart data={trendData} />
+          </CardBody>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Residents</CardTitle>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <ProportionBar
+              title="Occupancy"
+              segments={[
+                { label: "Owners", value: ownerMembers, color: "bg-forest" },
+                { label: "Tenants", value: tenantMembers, color: "bg-leaf" },
+              ]}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Badge tone="neutral">{kasambahayCount} Kasambahay</Badge>
+              <Badge tone="neutral">{vehicleCount} Vehicles</Badge>
+              <Badge tone="neutral">{petCount} Pets</Badge>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Violations</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <ProportionBar
+              title="Status"
+              segments={[
+                { label: "Resolved", value: resolvedViolations, color: "bg-forest" },
+                {
+                  label: "Open",
+                  value: openViolations,
+                  color: "bg-amber",
+                  textColor: "text-amber",
+                },
+              ]}
+            />
+          </CardBody>
+        </Card>
+
+        <Card className="sm:col-span-2 lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Payments</CardTitle>
+            <CardDescription>{homeowners} active logins</CardDescription>
+          </CardHeader>
+          <CardBody>
+            <ProportionBar
+              title="Review"
+              segments={[
+                { label: "Approved", value: paidPaymentsCount, color: "bg-forest" },
+                {
+                  label: "Pending",
+                  value: pendingPayments,
+                  color: "bg-amber",
+                  textColor: "text-amber",
+                },
+                { label: "Rejected", value: rejectedPaymentsCount, color: "bg-line" },
+              ]}
+            />
+          </CardBody>
+        </Card>
       </div>
     </div>
   );

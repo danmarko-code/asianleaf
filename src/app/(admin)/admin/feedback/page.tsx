@@ -53,9 +53,8 @@ export default async function AdminFeedbackPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Inbox"
         title="Feedback"
-        description="Comments and suggestions submitted by homeowners."
+        description="Ideas, concerns and requests from homeowners."
       />
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
@@ -70,7 +69,7 @@ export default async function AdminFeedbackPage({
       {feedback.length === 0 ? (
         <EmptyState
           title="No feedback yet"
-          description="Messages submitted from the homeowner app will appear here."
+          description="Messages from homeowners will appear here."
         />
       ) : (
         <div className="space-y-4">

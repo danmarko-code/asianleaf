@@ -17,10 +17,19 @@ import {
   registrationPayloadSchema,
   unitDetailsSchema,
 } from "@/lib/registration";
+import {
+  UNREGISTERED_PLATE,
+  parseVehicleForm,
+  type VehicleInput,
+} from "@/lib/vehicles";
 
 export type CreateMemberState = {
   error?: string;
   fieldErrors?: Record<string, string>;
+  // Keyed by the row index the wizard rendered it under.
+  vehicleErrors?: Record<number, Record<string, string>>;
+  // Set instead of redirecting when the form runs inside the members modal.
+  created?: { username: string };
 };
 
 const usernameSchema = z
@@ -189,9 +198,26 @@ export async function createMemberAction(
     return { error: "Check the household details and try again." };
   }
 
-  const plateNumbers = payload.data.vehicles.map((vehicle) =>
-    vehicle.plateNumber.toLowerCase(),
-  );
+  const vehicleErrors: Record<number, Record<string, string>> = {};
+  const vehicles: VehicleInput[] = [];
+
+  payload.data.vehicles.forEach((row, index) => {
+    const result = parseVehicleForm(row);
+    if (!result.ok) {
+      vehicleErrors[index] = result.state.fieldErrors ?? {};
+      return;
+    }
+    vehicles.push(result.data);
+  });
+
+  if (Object.keys(vehicleErrors).length > 0) {
+    return { vehicleErrors, error: "Check the vehicle details." };
+  }
+
+  const plateNumbers = vehicles
+    .map((vehicle) => vehicle.plateNumber)
+    .filter((plate) => plate !== UNREGISTERED_PLATE);
+
   if (new Set(plateNumbers).size !== plateNumbers.length) {
     return { error: "Each vehicle plate number can only be listed once." };
   }
@@ -305,11 +331,11 @@ export async function createMemberAction(
         });
       }
 
-      if (payload.data.vehicles.length > 0) {
+      if (vehicles.length > 0) {
         await tx.vehicle.createMany({
-          data: payload.data.vehicles.map((vehicle) => ({
+          data: vehicles.map((vehicle) => ({
             memberId: member.id,
-            plateNumber: vehicle.plateNumber,
+            ...vehicle,
           })),
         });
       }
@@ -361,6 +387,11 @@ export async function createMemberAction(
 
   revalidatePath("/admin/members");
   revalidatePath("/admin/dashboard");
+
+  // The members modal closes and refreshes the list instead of navigating.
+  if (formData.get("inline") === "1") {
+    return { created: { username: parsed.data.username } };
+  }
 
   redirect(
     `/admin/members/${memberId}?notice=${encodeURIComponent(

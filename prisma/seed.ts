@@ -375,6 +375,7 @@ async function main() {
   const payments = [
     {
       id: "pay_001",
+      householdId: "hh_001",
       dueId: dueId("hh_001"),
       channelId: "ch_gcash",
       amount: 1500,
@@ -390,6 +391,7 @@ async function main() {
     },
     {
       id: "pay_002",
+      householdId: "hh_002",
       dueId: dueId("hh_002"),
       channelId: "ch_gcash",
       amount: 700,
@@ -405,6 +407,7 @@ async function main() {
     },
     {
       id: "pay_003",
+      householdId: "hh_004",
       dueId: dueId("hh_004"),
       channelId: "ch_gcash",
       amount: 500,
@@ -420,6 +423,7 @@ async function main() {
     },
     {
       id: "pay_004",
+      householdId: "hh_004",
       dueId: dueId("hh_004"),
       channelId: "ch_gcash",
       amount: 1000,
@@ -435,6 +439,7 @@ async function main() {
     },
     {
       id: "pay_005",
+      householdId: "hh_005",
       dueId: dueId("hh_005"),
       channelId: "ch_gcash",
       amount: 1500,
@@ -450,6 +455,7 @@ async function main() {
     },
     {
       id: "pay_006",
+      householdId: "hh_003",
       dueId: dueId("hh_003"),
       channelId: "ch_gcash",
       amount: 1500,
@@ -489,6 +495,7 @@ async function main() {
     const id = `pay_prev_${index + 1}`;
     const paidAt = monthDate(-1, 3 + index);
     const payment = {
+      householdId,
       dueId: previousDueId(householdId),
       channelId: "ch_gcash",
       amount: 1500,
@@ -639,7 +646,7 @@ async function main() {
       householdId: "hh_001",
       memberId: "mem_maria",
       kind: "WARNING" as const,
-      category: "No vehicle sticker",
+      category: "Security / Gate Pass Violation",
       description:
         "Vehicle with plate ABC 1234 was seen inside the subdivision without the 2026 HOA sticker. Please secure a sticker from the office.",
       status: "OPEN" as const,
@@ -655,7 +662,7 @@ async function main() {
       householdId: "hh_003",
       memberId: "mem_ana",
       kind: "PAYMENT_REQUIRED" as const,
-      category: "Improper waste disposal",
+      category: "Improper Garbage Disposal",
       description:
         "Household waste was left outside the designated collection area after collection day. Please settle the corresponding penalty.",
       status: "OPEN" as const,
@@ -671,7 +678,7 @@ async function main() {
       householdId: "hh_002",
       memberId: "mem_jose",
       kind: "PAYMENT_REQUIRED" as const,
-      category: "Unregistered pet",
+      category: "Pet Policy Violation",
       description:
         "A second dog was observed at the unit but is not listed in the household record.",
       status: "RESOLVED" as const,

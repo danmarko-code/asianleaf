@@ -10,3 +10,10 @@ dist/
 coverage/
 playwright-report/
 test-results/
+
+graphify-out/
+
+# Runtime uploads (receipts) are not source and are served only via an
+# authorized route, never as public static files.
+/.data/
+public/uploads/

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { LeafMark } from "@/components/brand/leaf-mark";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { CheckIcon } from "@/components/icons";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +72,7 @@ export default async function DesignPage() {
       <header className="border-b border-line">
         <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4">
           <Link href={home} className="flex items-center gap-2">
-            <LeafMark className="h-7 w-7 text-forest" />
+            <BrandMark className="h-7 w-7" />
             <span className="font-serif text-lg text-forest">Asian Leaf</span>
           </Link>
           <div className="flex items-center gap-3">
@@ -89,7 +89,6 @@ export default async function DesignPage() {
 
       <main className="mx-auto w-full max-w-5xl space-y-12 px-4 py-10">
         <PageHeader
-          eyebrow="Internal"
           title="Style guide"
           description="The single source of truth for color, type, components and UI states. Sample content is used here only to show layout."
         />

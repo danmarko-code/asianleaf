@@ -5,81 +5,96 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth";
-import { dateFromInput } from "@/lib/dates";
 import { prisma } from "@/lib/db";
+import { saveReceipt } from "@/lib/receipts";
+import type { PaymentFormState } from "./form-state";
+
+const METHODS = ["CASH", "GCASH", "BANK_TRANSFER", "OTHER"] as const;
+const NEEDS_REFERENCE = new Set<string>(["GCASH", "BANK_TRANSFER"]);
 
 const paymentSchema = z.object({
-  dueId: z.string().min(1),
-  channelId: z.string().min(1),
-  amount: z.coerce.number().positive().max(100000),
-  referenceNumber: z.string().trim().min(4).max(80),
-  paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  notes: z.string().trim().max(500).optional(),
+  amount: z.coerce
+    .number()
+    .positive("Enter an amount greater than zero.")
+    .max(1_000_000, "That amount is too large."),
+  method: z.enum(METHODS),
 });
 
-function fail(message: string): never {
-  redirect(`/app/payments?error=${encodeURIComponent(message)}`);
-}
-
-export async function submitPaymentAction(formData: FormData) {
+export async function submitPaymentAction(
+  _previous: PaymentFormState,
+  formData: FormData,
+): Promise<PaymentFormState> {
   const user = await requireRole("HOMEOWNER");
-  if (!user.householdId) fail("Your login is not linked to a household yet.");
+  const amountInput = String(formData.get("amount") ?? "").trim();
+  const methodInput = String(formData.get("method") ?? "").trim();
+  const referenceInput = String(formData.get("referenceNumber") ?? "").trim();
+  const values = {
+    amount: amountInput,
+    method: methodInput,
+    referenceNumber: referenceInput,
+  };
+
+  if (!user.householdId) {
+    return { error: "Your login is not linked to a household yet.", values };
+  }
 
   const parsed = paymentSchema.safeParse({
-    dueId: formData.get("dueId"),
-    channelId: formData.get("channelId"),
-    amount: formData.get("amount"),
-    referenceNumber: formData.get("referenceNumber"),
-    paidAt: formData.get("paidAt"),
-    notes: formData.get("notes") || undefined,
+    amount: amountInput,
+    method: methodInput,
   });
 
+  const fieldErrors: NonNullable<PaymentFormState["fieldErrors"]> = {};
   if (!parsed.success) {
-    fail("Enter a valid amount, reference number and payment date.");
+    for (const issue of parsed.error.issues) {
+      if (issue.path[0] === "amount") fieldErrors.amount = issue.message;
+      if (issue.path[0] === "method") fieldErrors.method = issue.message;
+    }
   }
 
-  const [due, channel] = await Promise.all([
-    prisma.due.findFirst({
-      where: { id: parsed.data.dueId, householdId: user.householdId },
-      include: {
-        payments: {
-          where: { status: "PAID" },
-          select: { amount: true },
-        },
-      },
-    }),
-    prisma.paymentChannel.findFirst({
-      where: { id: parsed.data.channelId, isActive: true },
-    }),
-  ]);
-
-  if (!due || due.status === "PAID" || due.status === "WAIVED") {
-    fail("That billing period is no longer open.");
+  if (referenceInput.length > 80) {
+    fieldErrors.referenceNumber = "Keep the reference number under 80 characters.";
+  } else if (NEEDS_REFERENCE.has(methodInput) && referenceInput.length < 4) {
+    fieldErrors.referenceNumber =
+      "Enter the reference number from your transaction receipt.";
   }
 
-  if (!channel) fail("Choose an active payment channel.");
-
-  const paid = due.payments.reduce(
-    (total, payment) => total + Number(payment.amount),
-    0,
-  );
-  const balance = Number(due.amount) - paid;
-
-  if (parsed.data.amount > balance) {
-    fail(`The amount cannot be more than the remaining balance of ${balance.toFixed(2)}.`);
+  const receipt = formData.get("receipt");
+  const file = receipt instanceof File && receipt.size > 0 ? receipt : null;
+  // Type and size are checked in saveReceipt, which runs only once the other
+  // fields pass.
+  if (!file && methodInput !== "CASH") {
+    fieldErrors.receipt = "Attach a photo or PDF of your receipt.";
   }
+
+  if (!parsed.success || Object.keys(fieldErrors).length > 0) {
+    return { error: "Check the highlighted fields and try again.", fieldErrors, values };
+  }
+
+  const data = parsed.data;
+  const saved = file ? await saveReceipt(file) : null;
+  if (saved && "error" in saved) {
+    return { error: saved.error, fieldErrors: { receipt: saved.error }, values };
+  }
+
+  // Newest open billing period is attached when one exists; a payment without
+  // an open due still belongs to the household.
+  const due = await prisma.due.findFirst({
+    where: { householdId: user.householdId, status: "UNPAID" },
+    orderBy: { dueDate: "asc" },
+    select: { id: true },
+  });
 
   try {
     await prisma.payment.create({
       data: {
-        dueId: due.id,
-        channelId: channel.id,
-        amount: parsed.data.amount,
-        method: channel.type,
+        householdId: user.householdId,
+        dueId: due?.id ?? null,
+        amount: data.amount,
+        method: data.method,
         status: "PENDING",
-        referenceNumber: parsed.data.referenceNumber,
-        notes: parsed.data.notes ?? null,
-        paidAt: dateFromInput(parsed.data.paidAt),
+        referenceNumber: referenceInput || null,
+        receiptUrl: saved?.url ?? null,
+        paidAt: new Date(),
       },
     });
   } catch (error) {
@@ -87,7 +102,11 @@ export async function submitPaymentAction(formData: FormData) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      fail("That reference number was already submitted.");
+      return {
+        error: "That reference number was already submitted.",
+        fieldErrors: { referenceNumber: "This reference number is already on file." },
+        values,
+      };
     }
     throw error;
   }

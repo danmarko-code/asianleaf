@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LeafMark } from "@/components/brand/leaf-mark";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { cn } from "@/lib/utils";
 
 const SPLASH_KEY = "asialeaf:splash-seen";
@@ -38,7 +38,7 @@ export function Splash() {
     ).matches;
     const timer = window.setTimeout(
       () => setPhase("closing"),
-      reducedMotion ? 1400 : 2200,
+      reducedMotion ? 600 : 900,
     );
 
     return () => window.clearTimeout(timer);
@@ -96,10 +96,7 @@ export function Splash() {
             !isChecking && "splash-mark",
           )}
         >
-          <LeafMark
-            className="h-16 w-16 text-forest"
-            veinClassName={!isChecking ? "splash-vein" : undefined}
-          />
+          <BrandMark className="h-16 w-16" />
         </div>
 
         <div className={cn("mt-6 text-center", !isChecking && "splash-copy")}>

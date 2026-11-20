@@ -3,11 +3,11 @@ import {
   addOwnHouseholdMemberAction,
   addOwnKasambahayAction,
   addOwnPetAction,
-  addOwnVehicleAction,
   removeOwnHouseholdMemberAction,
   removeOwnKasambahayAction,
   removeOwnPetAction,
   removeOwnVehicleAction,
+  saveOwnVehicleAction,
   updateOwnContactAction,
 } from "@/app/(homeowner)/app/profile/actions";
 import { Alert } from "@/components/ui/alert";
@@ -21,9 +21,11 @@ import {
 } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-header";
+import { VehicleForm } from "@/components/vehicles/vehicle-form";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NAME_INPUT_PATTERN, NAME_ERROR } from "@/lib/registration";
+import { vehicleTypeLabel } from "@/lib/vehicles";
 
 export const metadata: Metadata = { title: "Household profile" };
 
@@ -39,13 +41,11 @@ export default async function HomeownerProfilePage({
     return (
       <div className="space-y-5">
         <PageHeader
-          eyebrow="Household"
           title="Profile"
-          description="Your login is not linked to a member record yet."
+          description="Your household details in one place."
         />
-        <Alert tone="warning" title="Member record missing">
-          Contact the association office so your login can be linked to your
-          household.
+        <Alert tone="warning" title="Your account isn’t linked yet">
+          Please contact the HOA office so we can connect your account to your home.
         </Alert>
       </div>
     );
@@ -66,13 +66,11 @@ export default async function HomeownerProfilePage({
     return (
       <div className="space-y-5">
         <PageHeader
-          eyebrow="Household"
           title="Profile"
-          description="Member record not found."
+          description="Your household details in one place."
         />
-        <Alert tone="warning" title="Member record missing">
-          Contact the association office so your login can be linked to your
-          household.
+        <Alert tone="warning" title="Your account isn’t linked yet">
+          Please contact the HOA office so we can connect your account to your home.
         </Alert>
       </div>
     );
@@ -83,9 +81,8 @@ export default async function HomeownerProfilePage({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Household"
         title="Profile"
-        description="Contact details, kasambahay, pets, vehicles and household members."
+        description="Your household details in one place."
       />
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
@@ -95,7 +92,7 @@ export default async function HomeownerProfilePage({
         <CardHeader>
           <CardTitle>Unit</CardTitle>
           <CardDescription>
-            Unit details are maintained by the association office.
+            Need to change your address? Contact the HOA office.
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-1 text-sm">
@@ -115,8 +112,7 @@ export default async function HomeownerProfilePage({
         <CardHeader>
           <CardTitle>Contact details</CardTitle>
           <CardDescription>
-            Keep your contact number up to date so the association can reach
-            you.
+            Keep your number up to date so we can reach you.
           </CardDescription>
         </CardHeader>
         <CardBody>
@@ -143,7 +139,7 @@ export default async function HomeownerProfilePage({
           <CardTitle>Household members</CardTitle>
           <CardDescription>
             {member.occupants.length === 0
-              ? "No additional members listed."
+              ? "No household members added yet."
               : `${member.occupants.length} listed.`}
           </CardDescription>
         </CardHeader>
@@ -206,7 +202,7 @@ export default async function HomeownerProfilePage({
           <CardTitle>Kasambahay</CardTitle>
           <CardDescription>
             {member.kasambahay.length === 0
-              ? "No kasambahay listed."
+              ? "No kasambahay added yet."
               : `${member.kasambahay.length} listed.`}
           </CardDescription>
         </CardHeader>
@@ -268,7 +264,7 @@ export default async function HomeownerProfilePage({
         <CardHeader>
           <CardTitle>Pets</CardTitle>
           <CardDescription>
-            {member.pets.length === 0 ? "No pets listed." : `${member.pets.length} listed.`}
+            {member.pets.length === 0 ? "No pets added yet." : `${member.pets.length} listed.`}
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
@@ -319,52 +315,47 @@ export default async function HomeownerProfilePage({
           <CardTitle>Vehicles</CardTitle>
           <CardDescription>
             {member.vehicles.length === 0
-              ? "No vehicles listed."
+              ? "No vehicles added yet."
               : `${member.vehicles.length} listed.`}
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-4">
-          <form action={addOwnVehicleAction} className="space-y-3">
-            <Input
-              label="Plate number"
-              name="plateNumber"
-              required
-              minLength={3}
-              maxLength={20}
-              placeholder="ABC 1234"
-            />
-            <Input
-              label="Count"
-              name="count"
-              type="number"
-              min="1"
-              max="20"
-              defaultValue="1"
-            />
-            <Button type="submit" size="sm" variant="secondary">
-              Add vehicle
-            </Button>
-          </form>
+          <VehicleForm action={saveOwnVehicleAction} resetOnSuccess />
 
           {member.vehicles.length > 0 ? (
             <ul className="divide-y divide-line border-t border-line pt-2">
               {member.vehicles.map((vehicle) => (
-                <li
-                  key={vehicle.id}
-                  className="flex flex-wrap items-center justify-between gap-2 py-3"
-                >
-                  <div>
-                    <p className="font-mono text-sm font-medium text-ink">
-                      {vehicle.plateNumber}
-                    </p>
-                    <p className="text-xs text-muted">Count: {vehicle.count}</p>
+                <li key={vehicle.id} className="space-y-2 py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-mono text-sm font-medium text-ink">
+                        {vehicle.plateNumber}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {vehicleTypeLabel(vehicle.vehicleType)} ·{" "}
+                        {vehicle.brandModel} · {vehicle.color}
+                      </p>
+                    </div>
+                    <form action={removeOwnVehicleAction}>
+                      <input type="hidden" name="id" value={vehicle.id} />
+                      <Button type="submit" size="sm" variant="ghost">
+                        Remove
+                      </Button>
+                    </form>
                   </div>
-                  <form action={removeOwnVehicleAction}>
-                    <input type="hidden" name="id" value={vehicle.id} />
-                    <Button type="submit" size="sm" variant="ghost">
-                      Remove
-                    </Button>
-                  </form>
+                  <details>
+                    <summary className="cursor-pointer text-xs font-medium text-forest">
+                      Edit details
+                    </summary>
+                    <div className="mt-3">
+                      <VehicleForm
+                        action={saveOwnVehicleAction}
+                        vehicle={vehicle}
+                        hiddenFields={{ id: vehicle.id }}
+                        submitLabel="Save changes"
+                      />
+                    </div>
+                  </details>
                 </li>
               ))}
             </ul>

@@ -26,13 +26,10 @@ export const metadata: Metadata = { title: "Payments" };
 
 const paymentInclude = {
   channel: true,
-  due: {
+  due: true,
+  household: {
     include: {
-      household: {
-        include: {
-          members: { take: 1, orderBy: { createdAt: "asc" as const } },
-        },
-      },
+      members: { take: 1, orderBy: { createdAt: "asc" as const } },
     },
   },
 };
@@ -68,17 +65,15 @@ export default async function AdminPaymentsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Collections"
         title="Payment verification"
-        description="Check the GCash reference against the HOA account before approving a pending payment."
+        description="Review GCash payments from homeowners."
       />
 
       {notice ? <Alert tone="info">{notice}</Alert> : null}
       {error ? <Alert tone="danger">{error}</Alert> : null}
 
-      <Alert tone="info" title="Verify before approving">
-        Open GCash and confirm the reference number, amount and date. Approval
-        marks the payment paid and updates the household balance.
+      <Alert tone="info" title="Before you approve">
+        Check that the reference number, amount and date match the GCash account.
       </Alert>
 
       <Card>
@@ -86,15 +81,15 @@ export default async function AdminPaymentsPage({
           <CardTitle>Pending payments</CardTitle>
           <CardDescription>
             {pending.length === 0
-              ? "Nothing waiting for verification."
-              : `${pending.length} payment${pending.length === 1 ? "" : "s"} waiting for verification.`}
+              ? "You’re all caught up."
+              : `${pending.length} payment${pending.length === 1 ? "" : "s"} to review.`}
           </CardDescription>
         </CardHeader>
         <CardBody className="px-0 py-0">
           {pending.length === 0 ? (
             <EmptyState
               title="No pending payments"
-              description="New GCash submissions from homeowners will appear here."
+              description="New payments from homeowners will appear here."
               className="mx-5 my-5"
             />
           ) : (
@@ -110,12 +105,12 @@ export default async function AdminPaymentsPage({
                 </thead>
                 <tbody>
                   {pending.map((payment) => {
-                    const member = payment.due.household.members[0];
+                    const member = payment.household.members[0];
                     return (
                       <tr key={payment.id}>
                         <Td>
                           <p className="font-medium text-ink">
-                            {payment.due.household.unitAddress}
+                            {payment.household.unitAddress}
                           </p>
                           <p className="mt-0.5 text-xs text-muted">
                             {member
@@ -123,17 +118,33 @@ export default async function AdminPaymentsPage({
                               : "No member on record"}
                           </p>
                           <p className="mt-0.5 text-xs text-muted">
-                            Due {formatMonthDay(payment.due.dueDate)}
+                            {payment.due
+                              ? `Due ${formatMonthDay(payment.due.dueDate)}`
+                              : "No invoice linked"}
                           </p>
                         </Td>
                         <Td>
                           <p className="font-mono text-xs">
-                            {payment.referenceNumber}
+                            {payment.referenceNumber ?? "N/A"}
                           </p>
                           <p className="mt-0.5 text-xs text-muted">
                             {payment.channel?.name ?? payment.method} ·{" "}
                             {payment.paidAt ? formatDate(payment.paidAt) : "No date"}
                           </p>
+                          {payment.receiptUrl ? (
+                            <a
+                              href={`/api/payments/${payment.id}/receipt`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-1 block text-xs text-forest underline-offset-2 hover:underline"
+                            >
+                              View Receipt
+                            </a>
+                          ) : (
+                            <p className="mt-1 text-xs text-muted">
+                              No receipt attached
+                            </p>
+                          )}
                           {payment.notes ? (
                             <p className="mt-1 max-w-56 text-xs text-muted">
                               {payment.notes}
@@ -144,18 +155,14 @@ export default async function AdminPaymentsPage({
                           {formatPeso(Number(payment.amount))}
                         </Td>
                         <Td>
-                          <div className="space-y-2">
-                            <form action={approvePaymentAction}>
-                              <input
-                                type="hidden"
-                                name="paymentId"
-                                value={payment.id}
-                              />
-                              <Button type="submit" size="sm">
-                                Approve
-                              </Button>
-                            </form>
-                            <form action={rejectPaymentAction} className="space-y-2">
+                          <div className="space-y-3">
+                            {/* The reason belongs to the reject action; the
+                                Reject button below targets this form by id so
+                                both actions share one row. */}
+                            <form
+                              id={`reject-${payment.id}`}
+                              action={rejectPaymentAction}
+                            >
                               <input
                                 type="hidden"
                                 name="paymentId"
@@ -169,10 +176,28 @@ export default async function AdminPaymentsPage({
                                 maxLength={300}
                                 placeholder="Wrong reference"
                               />
-                              <Button type="submit" size="sm" variant="danger">
+                            </form>
+
+                            <div className="flex flex-row items-center gap-2">
+                              <form action={approvePaymentAction}>
+                                <input
+                                  type="hidden"
+                                  name="paymentId"
+                                  value={payment.id}
+                                />
+                                <Button type="submit" size="sm">
+                                  Approve
+                                </Button>
+                              </form>
+                              <Button
+                                type="submit"
+                                size="sm"
+                                variant="danger"
+                                form={`reject-${payment.id}`}
+                              >
                                 Reject
                               </Button>
-                            </form>
+                            </div>
                           </div>
                         </Td>
                       </tr>
@@ -189,14 +214,14 @@ export default async function AdminPaymentsPage({
         <CardHeader>
           <CardTitle>Recently reviewed</CardTitle>
           <CardDescription>
-            The last approved and rejected payments.
+            Payments you’ve approved or rejected.
           </CardDescription>
         </CardHeader>
         <CardBody className="px-0 py-0">
           {reviewed.length === 0 ? (
             <EmptyState
               title="No reviewed payments yet"
-              description="Approved and rejected payments will be listed here."
+              description="Approved and rejected payments will appear here."
               className="mx-5 my-5"
             />
           ) : (
@@ -214,20 +239,36 @@ export default async function AdminPaymentsPage({
                   {reviewed.map((payment) => (
                     <tr key={payment.id}>
                       <Td>
-                        {payment.due.household.unitAddress}
+                        {payment.household.unitAddress}
                         <p className="mt-0.5 text-xs text-muted">
-                          Due {formatMonthDay(payment.due.dueDate)}
+                          {payment.due
+                            ? `Due ${formatMonthDay(payment.due.dueDate)}`
+                            : "No invoice linked"}
                         </p>
                       </Td>
                       <Td>
                         <span className="font-mono text-xs">
-                          {payment.referenceNumber}
+                          {payment.referenceNumber ?? "N/A"}
                         </span>
                         {payment.receiptNumber ? (
                           <p className="mt-0.5 text-xs text-muted">
                             {payment.receiptNumber}
                           </p>
                         ) : null}
+                        {payment.receiptUrl ? (
+                          <a
+                            href={`/api/payments/${payment.id}/receipt`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 block text-xs text-forest underline-offset-2 hover:underline"
+                          >
+                            View Receipt
+                          </a>
+                        ) : (
+                          <p className="mt-1 text-xs text-muted">
+                            No receipt attached
+                          </p>
+                        )}
                       </Td>
                       <Td className="tabular">
                         {formatPeso(Number(payment.amount))}

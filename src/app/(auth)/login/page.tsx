@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { loginAction } from "@/app/(auth)/actions";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, PasswordInput } from "@/components/ui/form";
 import { getSessionUser } from "@/lib/auth";
 
@@ -22,39 +22,40 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <form action={loginAction} className="space-y-4">
-          {error ? <Alert tone="danger">{error}</Alert> : null}
+    <div>
+      <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+        <BrandMark className="h-12 w-12 lg:hidden" />
+        <h1 className="mt-4 font-serif text-3xl font-semibold tracking-tight text-ink lg:mt-0">
+          Welcome back
+        </h1>
+        <p className="mt-1 text-sm text-muted">Sign in to continue</p>
+      </div>
 
-          <Input
-            label="Username"
-            name="username"
-            autoComplete="username"
-            required
-            placeholder="e.g. maria.santos"
-          />
-          <PasswordInput
-            label="Password"
-            name="password"
-            autoComplete="current-password"
-            required
-            placeholder="Your password"
-          />
+      <form action={loginAction} className="mt-8 space-y-4">
+        {error ? <Alert tone="danger">{error}</Alert> : null}
 
-          <Button type="submit" className="w-full">
-            Sign in
-          </Button>
-        </form>
+        <Input
+          label="Username"
+          name="username"
+          autoComplete="username"
+          required
+          placeholder="maria.santos"
+        />
+        <PasswordInput
+          label="Password"
+          name="password"
+          autoComplete="current-password"
+          required
+        />
 
-        <p className="mt-4 text-xs text-muted">
-          Household logins are issued by the association office. Ask the office
-          to reset a forgotten password.
-        </p>
-      </CardBody>
-    </Card>
+        <Button type="submit" className="w-full">
+          Sign in
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-xs text-muted lg:text-left">
+        No account? Ask the HOA office.
+      </p>
+    </div>
   );
 }

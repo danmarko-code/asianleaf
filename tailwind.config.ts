@@ -32,6 +32,7 @@ const config: Config = {
       },
       boxShadow: {
         card: "var(--shadow-card)",
+        lift: "var(--shadow-lift)",
       },
       maxWidth: {
         content: "1280px",

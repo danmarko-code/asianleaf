@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Select } from "@/components/ui/form";
+import { BudgetCategoryFields } from "@/app/(admin)/admin/budget/category-select";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Table, TableWrapper, Td, Th } from "@/components/ui/table";
@@ -58,9 +59,8 @@ export default async function AdminBudgetPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Transparency"
         title="Budget report"
-        description="Income and expenses reported to homeowners, with monthly totals."
+        description="Track income and expenses. Homeowners can see this report."
       />
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
@@ -88,7 +88,7 @@ export default async function AdminBudgetPage({
         <CardHeader>
           <CardTitle>Add entry</CardTitle>
           <CardDescription>
-            Homeowners see this report on their Transparency page.
+            Record money coming in or going out.
           </CardDescription>
         </CardHeader>
         <CardBody>
@@ -99,16 +99,7 @@ export default async function AdminBudgetPage({
                 <option value="EXPENSE">Expense</option>
               </Select>
             </div>
-            <div className="lg:col-span-3">
-              <Input
-                label="Category"
-                name="category"
-                required
-                minLength={2}
-                maxLength={80}
-                placeholder="Security"
-              />
-            </div>
+            <BudgetCategoryFields />
             <div className="lg:col-span-4">
               <Input
                 label="Description"
@@ -151,14 +142,14 @@ export default async function AdminBudgetPage({
         <CardHeader>
           <CardTitle>Recent entries</CardTitle>
           <CardDescription>
-            The latest 100 income and expense records.
+            The latest 100 entries.
           </CardDescription>
         </CardHeader>
         <CardBody className="px-0 py-0">
           {entries.length === 0 ? (
             <EmptyState
               title="No budget entries yet"
-              description="Add the first income or expense record above."
+              description="Add your first entry above."
               className="mx-5 my-5"
             />
           ) : (

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { updateViolationStatusAction } from "@/app/(admin)/admin/violations/actions";
-import { ViolationForm } from "@/app/(admin)/admin/violations/violation-form";
+import { LogViolationDialog } from "@/app/(admin)/admin/violations/log-violation-dialog";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,38 +58,24 @@ export default async function AdminViolationsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Community rules"
         title="Violations"
-        description="Issue a warning or a payment requirement to a specific resident or household."
+        description="Issue warnings and fines, and track them until they’re settled."
+        actions={<LogViolationDialog households={households} />}
       />
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
       {error ? <Alert tone="danger">{error}</Alert> : null}
 
-      <Alert tone="info" title="Residents see open violations">
-        An open violation appears below the resident&apos;s dashboard greeting
-        and on their Violations page. Mark it resolved once the concern is
-        settled.
+      <Alert tone="info" title="Residents are notified">
+        Open notices show on the resident’s home screen. Mark them resolved once settled.
       </Alert>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Issue a violation</CardTitle>
-          <CardDescription>
-            Set the resident, type, date and payment details when needed.
-          </CardDescription>
-        </CardHeader>
-        <CardBody>
-          <ViolationForm households={households} />
-        </CardBody>
-      </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Violation records</CardTitle>
           <CardDescription>
             {violations.length === 0
-              ? "No violations recorded."
+              ? "No notices issued yet."
               : `${violations.length} violation${violations.length === 1 ? "" : "s"} recorded.`}
           </CardDescription>
         </CardHeader>
@@ -97,7 +83,7 @@ export default async function AdminViolationsPage({
           {violations.length === 0 ? (
             <EmptyState
               title="No violations yet"
-              description="Use the form above to issue the first notice."
+              description="Notices you issue will appear here."
               className="mx-5 my-5"
             />
           ) : (

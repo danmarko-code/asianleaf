@@ -21,23 +21,22 @@ export default async function AdminAuditPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Oversight"
         title="Audit log"
-        description="Administrative actions recorded by the portal, newest first."
+        description="A record of every admin action, newest first."
       />
 
       <Card>
         <CardHeader>
           <CardTitle>Recent activity</CardTitle>
           <CardDescription>
-            The latest 100 recorded actions. Metadata is stored as JSON.
+            The latest 100 actions.
           </CardDescription>
         </CardHeader>
         <CardBody className="px-0 py-0">
           {logs.length === 0 ? (
             <EmptyState
               title="No audit records yet"
-              description="Approvals, payment reviews, violations, dues runs and edits will appear here."
+              description="Admin actions will appear here as they happen."
               className="mx-5 my-5"
             />
           ) : (

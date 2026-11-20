@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
+import { AddMemberDialog } from "@/app/(admin)/admin/members/add-member-dialog";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonStyles } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
@@ -38,6 +40,7 @@ export default async function AdminMembersPage({
     lot?: string | string[];
     occupancy?: string | string[];
     status?: string | string[];
+    notice?: string | string[];
   }>;
 }) {
   await requireRole("ADMIN");
@@ -94,10 +97,7 @@ export default async function AdminMembersPage({
     });
   }
 
-  if (
-    occupancy === "OWNER_OCCUPIED" ||
-    occupancy === "TENANT"
-  ) {
+  if (occupancy === "OWNER_OCCUPIED" || occupancy === "TENANT") {
     filters.push({ occupancyType: occupancy });
   }
 
@@ -139,15 +139,14 @@ export default async function AdminMembersPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Records"
         title="Members"
-        description="Search household records by resident, contact details, street or block."
-        actions={
-          <Link href="/admin/members/new" className={buttonStyles({ size: "sm" })}>
-            Add member
-          </Link>
-        }
+        description="Find residents by name, contact number or address."
+        actions={<AddMemberDialog />}
       />
+
+      {firstValue(params.notice) ? (
+        <Alert tone="success">{firstValue(params.notice).slice(0, 200)}</Alert>
+      ) : null}
 
       <Card>
         <CardBody>
@@ -214,7 +213,9 @@ export default async function AdminMembersPage({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-12">
-              <Button type="submit">Search records</Button>
+              <Button type="submit" size="sm">
+                Search records
+              </Button>
               {hasFilters ? (
                 <Link
                   href="/admin/members"
@@ -241,7 +242,7 @@ export default async function AdminMembersPage({
       {members.length === 0 ? (
         <EmptyState
           title="No matching members"
-          description="Try a different name, street or block, or clear the filters to see every record."
+          description="Try a different search or clear the filters."
           action={
             <Link
               href="/admin/members"
@@ -325,10 +326,13 @@ export default async function AdminMembersPage({
                             {member.status === "ACTIVE" ? "Active" : "Inactive"}
                           </Badge>
                         </Td>
-                        <Td className="text-right whitespace-nowrap">
+                        <Td className="whitespace-nowrap text-right">
                           <Link
                             href={`/admin/members/${member.id}`}
-                            className={buttonStyles({ variant: "ghost", size: "sm" })}
+                            className={buttonStyles({
+                              variant: "ghost",
+                              size: "sm",
+                            })}
                           >
                             Edit / Manage
                           </Link>

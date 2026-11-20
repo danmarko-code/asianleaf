@@ -98,10 +98,15 @@ export const registrationPayloadSchema = z.object({
       }),
     )
     .max(10),
+  // Vehicle rows are checked by parseVehicleForm so the wizard follows the same
+  // rules as the vehicle forms; this shape only keeps the keys optional.
   vehicles: z
     .array(
       z.object({
-        plateNumber: z.string().trim().min(1).max(20),
+        vehicleType: z.string().optional(),
+        plateNumber: z.string().optional(),
+        brandModel: z.string().optional(),
+        color: z.string().optional(),
       }),
     )
     .max(10),

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Alert } from "@/components/ui/alert";
 import {
   Card,
   CardBody,
@@ -45,15 +44,11 @@ export default async function HomeownerBudgetPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Community"
         title="Transparency"
-        description="How the association earns and spends community funds."
+        description="See how the association’s funds are used."
       />
 
-      <Alert tone="info" title="Reported by the treasurer">
-        Entries are posted by the administration. Keep your GCash receipts until
-        your payment is verified.
-      </Alert>
+      
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Income this month" value={formatPeso(income)} />
@@ -64,13 +59,13 @@ export default async function HomeownerBudgetPage() {
       <Card>
         <CardHeader>
           <CardTitle>Recent entries</CardTitle>
-          <CardDescription>The latest 100 records.</CardDescription>
+          <CardDescription>The latest income and expenses.</CardDescription>
         </CardHeader>
         <CardBody className="px-0 py-0">
           {entries.length === 0 ? (
             <EmptyState
-              title="No entries yet"
-              description="The treasurer has not published a budget report yet."
+              title="Nothing posted yet"
+              description="Budget updates from the treasurer will appear here."
               className="mx-5 my-5"
             />
           ) : (

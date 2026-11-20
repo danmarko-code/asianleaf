@@ -31,13 +31,11 @@ export default async function HomeownerViolationsPage() {
     return (
       <div className="space-y-5">
         <PageHeader
-          eyebrow="Community rules"
           title="Violations"
-          description="Your login is not linked to a household yet."
+          description="Notices from the HOA about your household."
         />
-        <Alert tone="warning" title="Household link missing">
-          Contact the association office so your login can be linked to your
-          unit.
+        <Alert tone="warning" title="Your account isn’t linked yet">
+          Please contact the HOA office so we can connect your account to your home.
         </Alert>
       </div>
     );
@@ -54,19 +52,17 @@ export default async function HomeownerViolationsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Community rules"
         title="Violations"
-        description="Warnings and payment requirements issued to your household."
+        description="Notices from the HOA about your household."
       />
 
       {openCount > 0 ? (
         <Alert tone="warning" title={`${openCount} open notice${openCount === 1 ? "" : "s"}`}>
-          Please review the details below. Contact the association office if you
-          need to clarify a notice.
+          Please review the details below. Questions? Contact the HOA office.
         </Alert>
       ) : (
-        <Alert tone="success" title="No open violations">
-          Your household has no open notices right now.
+        <Alert tone="success" title="You’re all set">
+          Your household has no open notices. Thank you!
         </Alert>
       )}
 
@@ -74,8 +70,8 @@ export default async function HomeownerViolationsPage() {
         <Card>
           <CardBody>
             <EmptyState
-              title="No violation records"
-              description="Notices issued by the association will appear here."
+              title="No notices"
+              description="Your household has a clean record."
               className="border-0 bg-transparent px-0 py-6 shadow-none"
             />
           </CardBody>
@@ -116,10 +112,10 @@ export default async function HomeownerViolationsPage() {
 
                 {violation.fineAmount ? (
                   <div className="rounded-md border border-line bg-cream px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.16em] text-muted">
+                    <p className="text-xs text-muted">
                       Amount to settle
                     </p>
-                    <p className="tabular mt-1 font-serif text-2xl text-forest">
+                    <p className="tabular mt-1 font-serif text-2xl font-semibold text-forest">
                       {formatPeso(Number(violation.fineAmount))}
                     </p>
                     {violation.dueDate ? (

@@ -7,10 +7,11 @@ import { requireRole } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { dateFromInput } from "@/lib/dates";
 import { prisma } from "@/lib/db";
+import { composeBudgetCategory } from "@/lib/budget";
 
 const entrySchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]),
-  category: z.string().trim().min(2).max(80),
+  category: z.string().trim().min(1).max(80),
   description: z.string().trim().min(2).max(300),
   amount: z.coerce.number().positive().max(10_000_000),
   occurredAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -43,10 +44,21 @@ export async function createBudgetEntryAction(formData: FormData) {
     );
   }
 
+  // Only categories from the standard list are accepted; "Other" may carry a
+  // free-text detail that is stored as "Other: detail".
+  const category = composeBudgetCategory(
+    parsed.data.category,
+    formData.get("categoryDetail")?.toString(),
+  );
+
+  if (!category) {
+    back("Choose a category from the list.", "error");
+  }
+
   const entry = await prisma.budgetEntry.create({
     data: {
       type: parsed.data.type,
-      category: parsed.data.category,
+      category,
       description: parsed.data.description,
       amount: parsed.data.amount,
       occurredAt: dateFromInput(parsed.data.occurredAt),

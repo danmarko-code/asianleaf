@@ -32,16 +32,16 @@ export function CollectionsTrendChart({
       {/* Header Stats */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-muted">
-            6-Month Collection Trend
+          <p className="text-sm text-muted">
+            Last 6 months
           </p>
-          <p className="tabular font-serif text-2xl font-bold text-ink">
+          <p className="tabular font-serif text-3xl font-semibold tracking-tight text-ink">
             {formatPeso(totalPeriod)}
           </p>
         </div>
         <div className="flex items-center gap-4 text-xs">
           <div>
-            <span className="text-muted">Monthly Avg: </span>
+            <span className="text-muted">Avg/month: </span>
             <span className="font-semibold text-ink">{formatPeso(avgMonthly)}</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -209,10 +209,10 @@ export function CollectionRateMeter({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="font-serif text-2xl font-bold text-ink">
+            <span className="font-serif text-2xl font-semibold text-ink">
               {percentage}%
             </span>
-            <span className="text-[10px] uppercase tracking-wide text-muted">
+            <span className="text-xs text-muted">
               Collected
             </span>
           </div>
